@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:80"
+    environment:
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+      - ENDPOINT=${ENDPOINT}
+      - ENV=${ENV}
+      - EXPORT_PRESET_GUID=${EXPORT_PRESET_GUID}
+      - PREFERRED_ARCHIVE=${PREFERRED_ARCHIVE}
+      - NAME=${NAME}
+  redis:
+    image: "redis:alpine"

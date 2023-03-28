@@ -30,7 +30,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/id/{field}/{value}", response_class=RedirectResponse)
 @limiter.limit(RATE_LIMIT)
-async def redirect_asset_by_field_value(r: Request, field: int | str, value: str | int):
+async def redirect_asset_by_field_value(
+    request: Request, field: int | str, value: str | int
+):
     """Redirects to first search result where field=value in configured archive"""
 
     asset = fotoware.find_single(FOTOWARE_PREFERRED_ARCHIVE, field, str(value))
@@ -41,7 +43,7 @@ async def redirect_asset_by_field_value(r: Request, field: int | str, value: str
 @app.get("/doc/{field}/{value}/{filename}", response_class=Response)
 @limiter.limit(RATE_LIMIT)
 async def retrieve_cached_asset_by_field_value(
-    r: Request,
+    request: Request,
     field: int | str,
     value: str | int,
     filename: str,

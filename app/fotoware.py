@@ -1,65 +1,34 @@
 import datetime
-import os
-import sys
-import time
+import json
+import logging
+from typing import Any, Tuple
+from urllib.parse import quote
 
-import redis
 import requests
 from fastapi import HTTPException
 
-PREFERRED_ARCHIVE = os.environ["PREFERRED_ARCHIVE"]
-ENDPOINT = os.environ["ENDPOINT"]
-CLIENT_ID = os.environ["CLIENT_ID"]
-CLIENT_SECRET = os.environ["CLIENT_SECRET"]
+from . import persistence
+from .config import (
+    FOTOWARE_CLIENT_ID,
+    FOTOWARE_CLIENT_SECRET,
+    FOTOWARE_HOST,
+    FOTOWARE_SEARCH_EXPRESSION_SUFFIX,
+)
+
 FOTOWARE_QUERY_PLACEHOLDER = "{?q}"
 
-cache = redis.Redis(host="redis", port=6379, decode_responses=True)
 
-
-def try_redis(num_retries=5):
-    """Wrap a function that calls Redis and retries in case of ConnectionErrors."""
-
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            retries = num_retries
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except redis.exceptions.ConnectionError as exc:
-                    if retries == 0:
-                        print(f"ERROR:\tCould not connect with Redis", file=sys.stderr)
-                        raise HTTPException(status_code=521)
-                    retries -= 1
-                    time.sleep(0.5)
-
-        return wrapper
-
-    return decorator
-
-
-def access_token():
+def access_token() -> str:
     """Get the OAuth2 Access Token from the environment variables CLIENT_ID and CLIENT_SECRET"""
 
-    @try_redis()
-    def set_access_token(value, expires_in):
-        print(
-            f"Fotoware:\tToken expires at",
-            datetime.datetime.now() + datetime.timedelta(0, expires_in),
-        )
-        cache.setex("access_token", int(expires_in), value)
-
-    @try_redis()
-    def get_access_token():
-        return cache.get("access_token")
-
-    def request_access_token():
-        print(f"Fotoware:\tRequesting NEW access token")
+    def request_new_access_token() -> Tuple[str, float]:
+        logging.debug(f"Fotoware:\tRequesting NEW access token")
         r = requests.post(
-            f"{ENDPOINT}/fotoweb/oauth2/token",
+            FOTOWARE_HOST + "/fotoweb/oauth2/token",
             data={
                 "grant_type": "client_credentials",
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
+                "client_id": FOTOWARE_CLIENT_ID,
+                "client_secret": FOTOWARE_CLIENT_SECRET,
             },
             allow_redirects=True,
             headers={"Accept": "application/json"},
@@ -67,56 +36,86 @@ def access_token():
         response = r.json()
         return response["access_token"], response["expires_in"]
 
-    value = get_access_token()
+    value = persistence.get("fotoware_access_token")
+    if value is not None:
+        return str(value, encoding="utf-8")
     if value is None:
-        value, expiration = request_access_token()
-        set_access_token(value, expiration)
+        value, expiration = request_new_access_token()
+        logging.info(
+            f"Fotoware:\tNew token expires at",
+            datetime.datetime.now() + datetime.timedelta(0, expiration),
+        )
+        persistence.set(
+            "fotoware_access_token",
+            value,
+            expires_in=datetime.timedelta(seconds=expiration),
+        )
+        return value
     return value
 
 
-def GET(path):
-    print(f"Fotoware:\tGET {path} (with auth)")
+def GET(path, *, headers={}, **get_kwargs) -> dict:
+    """GET request on the Fotoware ENDPOINT_HOST"""
+    logging.debug(f"Fotoware:\tGET {path} (with auth)")
     r = requests.get(
-        f"{ENDPOINT}{path}", headers={"Accept": "application/json", **auth_header()}
+        f"{FOTOWARE_HOST}{path}",
+        headers={"Accept": "application/json", **auth_header(), **headers},
+        allow_redirects=True,
+        **get_kwargs,
     )
     return r.json()
 
 
-def auth_header():
+def auth_header() -> dict[str, str]:
+    """Return Authorization header as a dict"""
     return {"Authorization": f"Bearer {access_token()}"}
 
 
-def find(archive: str, field: int | str, value: str):
-    preferred_archive = GET(f"/fotoweb/archives/{archive}/")
+def find_all(archive_id: str, field: int | str, value: str) -> Any:
+    """Find all assets that match field=value in an archive"""
+    preferred_archive = GET(f"/fotoweb/archives/{archive_id}/")
 
     if not "searchURL" in preferred_archive:
-        raise HTTPException(
-            status_code=503, detail=f"Archive '{archive}' cannot be searched."
-        )
+        logging.error(f"Archive '{archive_id}' cannot be searched")
+        raise HTTPException(status_code=503)
 
     search_base_url: str = preferred_archive["searchURL"]
 
     # order always by oldest-first
-    query = f";o=+?{field}={value}"
+    query = ";o=+?q=" + quote(f"{field}:{value} {FOTOWARE_SEARCH_EXPRESSION_SUFFIX}")
 
     search_query = search_base_url.replace(FOTOWARE_QUERY_PLACEHOLDER, query)
     search_results = GET(search_query)
 
-    if (
-        not "assets" in search_results
-        or not "data" in search_results["assets"]
-        or len(search_results["assets"]["data"]) == 0
-    ):
+    return {"assets": {"data": []}, **search_results}["assets"]["data"]
+
+
+def find_single(archive_id: str, field: int | str, value: str):
+    """Find a single asset that matches field=value in an archive"""
+
+    assets = find_all(archive_id, field, value)
+
+    if len(assets) == 0:
+        logging.error(f"No assets in archive '{archive_id}' match {field}='{value}'")
         raise HTTPException(status_code=404)
 
-    assets = search_results["assets"]["data"]
-
     if len(assets) > 1:
-        print(
-            "ERROR:\tMultiple matching assets:",
-            map(lambda i: i["href"], assets),
-            file=sys.stderr,
+        logging.error(
+            f"Multiple assets in archive '{archive_id}' match {field}='{value}'",
+            json.dumps(map(lambda i: i["href"], assets)),
         )
         raise HTTPException(status_code=404)
 
-    return search_results["assets"]["data"][0]
+    return assets[0]
+
+
+def rendition_request_service_url() -> str:
+    api_descriptor = GET("/fotoweb/me/")
+    if (
+        "services" in api_descriptor
+        and "rendition_request" in api_descriptor["services"]
+    ):
+        return api_descriptor["services"]["rendition_request"]
+    else:
+        logging.error(f"Unexpected API description", json.dumps(api_descriptor))
+        raise HTTPException(status_code=500)

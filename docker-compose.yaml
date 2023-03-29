@@ -6,8 +6,11 @@ services:
     ports:
       - "5001:80"
     env_file: .env
+    depends_on:
+      - memcached
 
-  redis:
-    image: "redis:alpine"
-    volumes:
-      - ./.cache/redis:/data
+  memcached:
+    image: "memcached:alpine"
+    command:
+      - memcached
+      - --memory-limit=512

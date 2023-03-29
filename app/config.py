@@ -41,3 +41,6 @@ NAME = os.getenv("NAME", "fotoware-http-get-by-id-fastapi")
 
 # Rate-limit in non-development mode the API endpoints
 RATE_LIMIT = os.getenv("RATE_LIMIT", "25/minute; 50/hour; 75/day")
+
+# Connection string for the Memcached file cache
+MEMCACHED_HOST = os.getenv("MEMCACHED_HOST", "memcached")

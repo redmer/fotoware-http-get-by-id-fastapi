@@ -7,8 +7,6 @@ The keys with `os.getenv` have defaults and are optional.
 
 import os
 
-# Set the seconds after which to expire the asset's cached representation (Optional)
-CACHE_EXPIRATION_SECONDS = int(os.getenv("CACHE_EXPIRATION_SECONDS", 60 * 60 * 24))
 
 # When set to "development", logging level is more verbose and OpenAPI documentation
 # becomes available (Optional)

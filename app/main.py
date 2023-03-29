@@ -9,7 +9,6 @@ from slowapi.util import get_ipaddr
 
 from . import fotoware, persistence, previews
 from .config import (
-    CACHE_EXPIRATION_SECONDS,
     ENV,
     FOTOWARE_PREFERRED_ARCHIVE,
     RATE_LIMIT,
@@ -61,9 +60,7 @@ async def retrieve_cached_asset_by_field_value(
 
     if cached is None or nocache:
         cached = previews.get_contents(asset)
-        persistence.set(
-            key, cached, expires_in=datetime.timedelta(seconds=CACHE_EXPIRATION_SECONDS)
-        )
+        persistence.set(key, cached)
 
     return Response(content=cached, media_type=mime_type)
 

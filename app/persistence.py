@@ -1,11 +1,14 @@
 import datetime
+from hashlib import sha256
 from typing import TypeAlias
 
 import pymemcache
 from pymemcache.client.retrying import RetryingClient
 from pymemcache.exceptions import MemcacheUnexpectedCloseError
 
-from .config import MEMCACHED_HOST
+from .config import FOTOWARE_FIELDNAME_UUID, MEMCACHED_HOST
+from .fotoware.apitypes import *
+from pymemcache.client.murmur3 import murmur3_32
 
 _Value: TypeAlias = bytes | float | int | str
 
@@ -22,12 +25,9 @@ MEMCACHED = RetryingClient(
 )
 
 
-def set(
-    name: str, value: _Value, *, expires_in: datetime.timedelta | None = None
-) -> bool | None:
+def set(name: str, value: _Value, *, expires_in: int | None = 0) -> bool | None:
     """Set a value in the cache, optionally with expiration"""
-    seconds = expires_in.seconds if expires_in else 0
-    return MEMCACHED.set(name, value, expire=seconds)
+    return MEMCACHED.set(name, value, expire=expires_in)
 
 
 def get(name: str, default: None = None) -> bytes | None:
@@ -35,6 +35,14 @@ def get(name: str, default: None = None) -> bytes | None:
     return MEMCACHED.get(name, default)
 
 
-def key(asset: dict):
-    """A (quasi) unique file ID that, upon modification, immediately expires"""
-    return (asset["physicalFileId"] or asset["href"]) + asset["modified"]
+def calc_asset_key(
+    asset: Asset, type: Literal["original", "rendition", "preview"], id: str
+) -> str:
+    """Some caching key. This may be before any persistent keys are available"""
+    base = (
+        asset.get("metadata", {}).get(FOTOWARE_FIELDNAME_UUID, {}).get("value")
+        or asset.get("physicalFileId")
+        or asset.get("href")
+    )
+    digest = murmur3_32(base, seed=1682083140)
+    return f"{digest}/{type}/{id}"

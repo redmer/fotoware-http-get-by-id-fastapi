@@ -2,7 +2,7 @@ import itertools
 from mimetypes import guess_type
 from typing import Annotated
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -10,7 +10,7 @@ from slowapi.util import get_ipaddr
 
 from . import fotoware, persistence
 from .apptoken import QueryHeaderAuth, TokenAud, tokencontents
-from .assign_metadata_tasks import Task, exec_update_tasks, task_info
+from .assign_metadata_tasks import IDENTIFIER_RE, Task, exec_update_tasks, task_info
 from .config import (
     ENV,
     FOTOWARE_ARCHIVES,
@@ -40,7 +40,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/id/{identifier}", response_class=RedirectResponse)
 @limiter.limit(RATE_LIMIT)
-async def identify_file(request: Request, identifier: str):
+async def identify_file(
+    request: Request, identifier: Annotated[str, Path(regex=IDENTIFIER_RE)]
+):
     """
     Find an file by identifier and 307 redirect to file_representation().
 
@@ -72,7 +74,7 @@ async def file_representation(
         ),
     ],
     request: Request,
-    identifier: str,
+    identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
     filename: str,
 ):
     """Retrieves the file metadata or, if public, the original rendition of the file"""
@@ -123,7 +125,7 @@ async def render_preview(
             )
         ),
     ],
-    identifier: str,
+    identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
     filename: str,
     size: Annotated[int, Query()] = 0,
     w: Annotated[int, Query()] = 0,
@@ -175,7 +177,7 @@ async def render_rendition(
             )
         ),
     ],
-    identifier: str,
+    identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
     filename: str,
     profile: str | None = None,
     size: int = 0,
@@ -302,7 +304,7 @@ async def webhook_assign_metadata(
     if asset is None:
         return
 
-    return await exec_update_tasks(assets=[asset], tasks=tasks)
+    return exec_update_tasks(assets=[asset], tasks=tasks)
 
 
 # Enable the fotoweb proxy and the JSON representations only in development mode. These

@@ -23,6 +23,9 @@ class Task(str, Enum):
     uuid = "uuid4"
 
 
+IDENTIFIER_RE = "^[rjkmtvyz][a-z0-9]+$"
+
+
 def calc_uuid(asset: Asset) -> tuple[str, str]:
     """
     Generate a globally unique ID. The ID is case-insensitive and always starts with a

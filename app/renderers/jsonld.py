@@ -38,6 +38,6 @@ def jsonldrender(asset: Asset) -> dict:
         "description": builtin_field("description"),
         "keywords": builtin_field("tags"),
         "fileSize": asset["filesize"],
-        "dateCreated": datetime.fromisoformat(asset["created"]),
-        "dateModified": datetime.fromisoformat(asset["modified"]),
+        "dateCreated": asset["created"],  # already ISO format
+        "dateModified": asset["modified"],  # already ISO format
     }

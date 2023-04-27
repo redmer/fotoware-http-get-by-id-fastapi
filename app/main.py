@@ -60,14 +60,13 @@ async def identify_file(
     """
 
     asset = fotoware.find(FOTOWARE_ARCHIVES, SE.eq(FOTOWARE_FIELDNAME_UUID, identifier))
-    pfx = "img" if asset["doctype"] in ["graphic", "image"] else "doc"
     lname, ext = asset["filename"].split(".", maxsplit=1)
     filename = slugify(lname) + "." + ext
 
     if (qToken := request.query_params.get("token")) is not None:
-        return f"/{pfx}/{identifier}/{filename}?token={qToken}"  # Re-send token query parameter along
+        return f"/doc/{identifier}/{filename}?token={qToken}"  # Re-send token query parameter along
 
-    return f"/{pfx}/{identifier}/{filename}"
+    return f"/doc/{identifier}/{filename}"
 
 
 @app.get("/doc/{identifier}/{filename}", response_class=Response)

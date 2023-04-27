@@ -2,7 +2,17 @@ import itertools
 from mimetypes import guess_type
 from typing import Annotated
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query, Request, status
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    status,
+    BackgroundTasks,
+)
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -257,6 +267,7 @@ async def worker_assign_metadata(
             )
         ),
     ],
+    background_tasks: BackgroundTasks,
     archives: Annotated[list[str], Query()] = FOTOWARE_ARCHIVES,
     num: Annotated[int, Query(ge=1, le=1000)] = 100,
     tasks: Annotated[list[Task], Query()] = [Task.uuid],
@@ -273,10 +284,15 @@ async def worker_assign_metadata(
     )
     AppLog.info(f"Query for worker: {query}")
 
-    # Find all assets that don't have a value for the ID-field.
-    assets_wo_id = fotoware.find_all(archives, SE(query), n=num)
+    background_tasks.add_task(update_assets, tasks, archives, SE(query), num)
+    return {"query": query, "message": f"Background task started"}
 
-    return exec_update_tasks(assets=assets_wo_id, tasks=tasks)
+
+async def update_assets(tasks: list[Task], archives: list[str], query: SE, max: int):
+    # Find all assets that don't have a value for the ID-field.
+    assets_wo_id = fotoware.find_all(archives, query, n=max)
+
+    exec_update_tasks(assets=assets_wo_id, tasks=tasks)
 
 
 @app.post("/-/webhooks/assign-metadata")

@@ -4,6 +4,8 @@ from random import choice
 from typing import Callable, Iterable
 from uuid import uuid4
 
+from fastapi import HTTPException
+
 from .config import (
     FOTOWARE_FIELDNAME_IMGSUBJ,
     FOTOWARE_FIELDNAME_PHASH,
@@ -12,6 +14,7 @@ from .config import (
 )
 from .fotoware import api
 from .fotoware.apitypes import Asset
+from .log import AppLog
 
 
 class Task(str, Enum):
@@ -86,6 +89,12 @@ def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
             }
 
     for href, metadata in combined_updates.items():
-        api.update_asset_metadata(href, metadata)
+        try:
+            api.update_asset_metadata(href, metadata)
+        except HTTPException as err:
+            if err.status_code >= 500:
+                AppLog.error(f"Update of '{href}' ({metadata}) failed: {err.detail}")
+            else:
+                raise err
 
     return combined_updates

@@ -15,22 +15,28 @@
             <section>
                 <h2>Metadata</h2>
                 <dl>
+                    <dt>URL identifier</dt>
+                    <dd><a href="{{ asset['@id'] }}">{{ asset['@id'] }}</a></dd>
                     <dt>Identifier</dt>
                     <dd>{{ asset.identifier }}</dd>
                     <dt>Type</dt>
-                    <dd>{{ asset.type }}</dd>
+                    <dd>{{ asset["dcterms:type"] }}</dd>
                     <dt>Proxied URL</dt>
-                    <dd><a href="{{ asset.about }}">{{ asset.about }}</a></dd>
-                    <dt>Proxy URL</dt>
+                    <dd><a href="{{ asset.mainEntityOfPage }}">{{ asset.mainEntityOfPage }}</a></dd>
+                    <dt>Proxy document URL</dt>
                     <dd><a href="{{ asset.url }}">{{ asset.url }}</a></dd>
-                    <dt>Name</dt>
+                    <dt>Filename</dt>
                     <dd>{{ asset.name }}</dd>
+                    <dt>Title</dt>
+                    <dd>{{ asset["dcterms:title"] }}</dd>
                     <dt>Description</dt>
                     <dd>{{ asset.description }}</dd>
                     <dt>Keywords</dt>
                     {%- for k in asset.keywords -%}
                     <dd>{{ k }}</dd>
                     {%- endfor -%}
+                    <dt>Encoding format (MIME-type)</dt>
+                    <dd>{{ asset.encodingFormat }}</dd>
                     <dt>File size</dt>
                     <dd>{{ asset.fileSize | filesizeformat }}</dd>
                     <dt>dateCreated</dt>
@@ -41,9 +47,7 @@
             </section>
             <section>
                 <h2>JSON-LD representation</h2>
-                <code><pre>
-{{ asset | tojson }}
-</pre></code>
+                <code><pre>{{ asset | tojson(indent=4) }}</pre></code>
             </section>
         </main>
     </article>

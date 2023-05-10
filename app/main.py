@@ -100,7 +100,7 @@ async def file_representation(
         return JSONResponse(jsonldrender(asset), media_type="application/ld+json")
 
     is_public = fotoware.assets.is_public(asset)
-    if not is_public or not authed:  # then, render metadata
+    if not is_public or (not authed and not is_public):  # then, render metadata
         return HTMLResponse(content=htmlrender(asset))
 
     # Render binary, check if it is already in cache
@@ -145,7 +145,7 @@ async def render_preview(
 
     asset = fotoware.find(FOTOWARE_ARCHIVES, SE.eq(FOTOWARE_FIELDNAME_UUID, identifier))
     is_public = fotoware.assets.is_public(asset)
-    if not is_public or not authed:
+    if not is_public or (not authed and not is_public):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     # Check if preview-able
@@ -198,7 +198,7 @@ async def render_rendition(
     asset = fotoware.find(FOTOWARE_ARCHIVES, SE.eq(FOTOWARE_FIELDNAME_UUID, identifier))
     is_public = fotoware.assets.is_public(asset)
 
-    if not is_public or not authed:
+    if not is_public or (not authed and not is_public):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     rendition_url = fotoware.find_rendition(

@@ -52,6 +52,11 @@ As `fotoware-http-get-by-id-fastapi` tries to be stateless, no services that pro
 <a id="fn1" href="#fn1">1:</a> Unauthenticated only for the public document types configured in `PUBLIC_DOCTYPES` or `PUBLIC_METADATA_KEY_VALUE`. Else, a HTML and JSON-LD preview is supplied of the file with a link to Fotoware. Supply a token to show the file immediately.
 <a id="fn2" href="#fn2">2:</a> You can configure the webhook with a long-lasting token from this page, but that would require to have set `JWT_SECRET`.
 
+## Development
+
+- A (VS Code) devcontainer is contained with this repository.
+- `$ docker compose up --build`
+
 ## Known issues
 
 Using UNION archives, the same file may appear with the same attributes and filename, yet in different archives.

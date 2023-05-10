@@ -34,13 +34,20 @@ from .log import AppLog
 from .renderers import htmlrender, jsonldrender
 from .slugify import slugify
 
-if ENV == "development":
-    # Only allow the /openapi.json and /docs paths if we're not in development mode
-    app = FastAPI(title="Fotoware asset proxy", debug=True)
-    RATE_LIMIT = "1000/second"
+app_desc = """Regular, unauthenticated GET requests to retrieve a Fotoware asset.
+    
+Source and details over at GitHub
+[redmer/fotoware-http-get-by-id-fastapi](https://github.com/redmer/fotoware-http-get-by-id-fastapi).
+"""
 
-else:
-    app = FastAPI(openapi_url=None)
+app = FastAPI(
+    title="Fotoware asset proxy",
+    description=app_desc,
+    openapi_url="/-/openapi.json",
+    docs_url="/-/docs/swagger",
+    redoc_url="/-/docs/redoc",
+)
+
 
 # IP-based rate limiter.
 limiter = Limiter(key_func=get_ipaddr)  # an ip-address based rate limiter
@@ -54,9 +61,9 @@ async def identify_file(
     request: Request, identifier: Annotated[str, Path(regex=IDENTIFIER_RE)]
 ):
     """
-    Find an file by identifier and 307 redirect to file_representation().
+    Find an file by identifier and 307 redirect to /doc/{identifier}/{filename}.
 
-    This endpoint is unauthenticated and only passes on ?token-query parameters.
+    This endpoint is unauthenticated and only passes on `?token` query parameters.
     """
 
     asset = fotoware.find(FOTOWARE_ARCHIVES, SE.eq(FOTOWARE_FIELDNAME_UUID, identifier))
@@ -69,7 +76,11 @@ async def identify_file(
     return f"/doc/{identifier}/{filename}"
 
 
-@app.get("/doc/{identifier}/{filename}", response_class=Response)
+@app.get(
+    "/doc/{identifier}/{filename}",
+    response_class=Response,
+    tags=["rendition", "json-ld"],
+)
 @limiter.limit(RATE_LIMIT)
 async def file_representation(
     authed: Annotated[
@@ -122,7 +133,7 @@ async def file_representation(
     )
 
 
-@app.get("/doc/{identifier}/preview/{filename}")
+@app.get("/doc/{identifier}/preview/{filename}", tags=["rendition"])
 async def render_preview(
     authed: Annotated[
         bool,
@@ -174,7 +185,7 @@ async def render_preview(
     )
 
 
-@app.get("/doc/{identifier}/rendition/{filename}")
+@app.get("/doc/{identifier}/rendition/{filename}", tags=["rendition"])
 async def render_rendition(
     authed: Annotated[
         bool,
@@ -224,7 +235,7 @@ async def render_rendition(
     )
 
 
-@app.get("/-/background-worker/jsonld-manifest")
+@app.get("/-/background-worker/jsonld-manifest", tags=["background worker", "json-ld"])
 async def worker_jsonld_manifest(
     authed: Annotated[
         bool,
@@ -254,7 +265,7 @@ async def worker_jsonld_manifest(
     return [jsonldrender(a) for a in fotoware.find_all(archives, query, n=num)]
 
 
-@app.get("/-/background-worker/assign-metadata")
+@app.get("/-/background-worker/assign-metadata", tags=["background worker", "tasks"])
 async def worker_assign_metadata(
     authed: Annotated[
         bool,
@@ -294,7 +305,7 @@ async def update_assets(tasks: list[Task], archives: list[str], query: SE, max: 
     exec_update_tasks(assets=assets_wo_id, tasks=tasks)
 
 
-@app.post("/-/webhooks/assign-metadata")
+@app.post("/-/webhooks/assign-metadata", tags=["webhook", "tasks"])
 async def webhook_assign_metadata(
     authed: Annotated[
         bool,
@@ -328,6 +339,8 @@ if ENV == "development":
     import logging
 
     logging.basicConfig(level=logging.DEBUG)
+    app.debug = True
+    RATE_LIMIT = "1000/second"
 
     @app.get("/fotoweb/{rest:path}", tags=["development mode"])
     def fotoweb_proxy(rest, request: Request):

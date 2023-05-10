@@ -33,7 +33,7 @@ In development mode:
 1. `GET /json/{identifier}/{filename}` renders the API's JSON response of the file
 1. `GET /fotoweb` proxies the entire Fotoware application
 1. `GET /-/tokens/new` returns new, temporarily valid tokens
-1. `GET /docs` and `GET /redoc` supply OpenAPI documentation on the whole service
+1. `GET /-/docs/swagger` and `GET /-/docs/redoc` supply OpenAPI documentation on the whole service
 
 The required and optional environment variables are listed and documented in [`app/config.py`](app/config.py).
 Please check the optionals `FOTOWARE_ARCHIVES`, `FOTOWARE_FIELDNAME_UUID`, `PUBLIC_DOCTYPES` and `RATE_LIMIT` and set them to a reasonable default for your usecase, as well as an adequate cache size for memcached.

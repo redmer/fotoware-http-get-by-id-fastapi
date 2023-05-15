@@ -44,8 +44,9 @@ If there are multiple results for the identifier, error 404 is returned and a wa
 This ensures that the ID is truly unique and prevents indeterminate, undefined behavior.
 
 **Authentication** or authorization of the service to Fotoware is done by a client-id and secret. End-user access to files depends on what is configures as public. If not public, authorization is passed by means of JWTs, that are supplied either via the query parameter `?token=` or with the appropriate HTTP header (Bearer). A token is required on all production endpoints, except `GET /id/{identifier}`. During testing, use `/-/tokens/new` to generate access tokens.[²](#fn2)
+The [token generation algorithm](#tokens) is described below.
 
-As `fotoware-http-get-by-id-fastapi` tries to be stateless, no services that provide token are registerd. Instead, linking services should use the `/id/{identifier}` or `/doc/{identifier}/{filename}` to find a public file OR generate their own tokens. The
+As this service tries to be stateless, no services that provide token are registerd. Instead, linking services should use the `/id/{identifier}` or `/doc/{identifier}/{filename}` to find a public file OR generate their own tokens.
 
 ---
 
@@ -56,6 +57,15 @@ As `fotoware-http-get-by-id-fastapi` tries to be stateless, no services that pro
 
 - A (VS Code) devcontainer is contained with this repository.
 - `$ docker compose up --build`
+
+## Tokens
+
+The JWT token contains three claims, signed with a previously shared secret (`JWT_SECRET`).
+The `exp` and `iat` claims are as JWT specifies them.
+Ensure that the validity duration does not exceed the value of `TOKEN_MAX_DURATION`.
+
+The `sub` claims concatenates a type (see `TokenAud`), `:`, and the file identifier.
+The audience types and the algorithm for the construction of the token can be verified in [apptoken.py](app/apptoken.py).
 
 ## Known issues
 

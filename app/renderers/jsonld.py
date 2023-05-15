@@ -1,10 +1,12 @@
+from mimetypes import guess_type
+from typing import Any
+
 from ..config import CANONICAL_HOST_BASE, FOTOWARE_FIELDNAME_UUID, FOTOWARE_HOST, HOST
 from ..fotoware.apitypes import Asset
 from ..slugify import slugify
-from mimetypes import guess_type
 
 
-def jsonldrender(asset: Asset) -> dict:
+def jsonldrender(asset: Asset) -> dict[str, Any]:
     def builtin_field(name: str):
         for field in asset["builtinFields"]:
             if field["field"] == name:
@@ -28,19 +30,22 @@ def jsonldrender(asset: Asset) -> dict:
 
     mime = guess_type(filename)[0]
 
-    return {
+    result = {
         "@id": subject,
         "@context": "https://schema.org/docs/jsonldcontext.json",
         "identifier": identifier,
-        "dcterms:type": asset["doctype"],
+        "dcterms:type": asset.get("doctype"),
         "mainEntityOfPage": fotoware_url,
         "url": local_render,
         "name": lname,
         "dcterms:title": builtin_field("title"),
         "description": builtin_field("description"),
         "keywords": builtin_field("tags"),
-        "encodingFormat": mime or "",
-        "fileSize": asset["filesize"],
-        "dateCreated": asset["created"],  # already ISO format
-        "dateModified": asset["modified"],  # already ISO format
+        "encodingFormat": mime or None,
+        "fileSize": asset.get("filesize"),
+        "dateCreated": asset.get("created"),  # already ISO format
+        "dateModified": asset.get("modified"),  # already ISO format
     }
+
+    # filter empty values
+    return {k: v for k, v in result.items() if v}

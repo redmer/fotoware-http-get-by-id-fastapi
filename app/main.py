@@ -1,8 +1,10 @@
 import itertools
+from datetime import datetime
 from mimetypes import guess_type
 from typing import Annotated
 
 from fastapi import (
+    BackgroundTasks,
     Body,
     Depends,
     FastAPI,
@@ -11,7 +13,6 @@ from fastapi import (
     Query,
     Request,
     status,
-    BackgroundTasks,
 )
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -30,6 +31,7 @@ from .config import (
     TOKEN_MAX_DURATION_SHORT,
 )
 from .fotoware import SE, Asset, api
+from .fotoware.search_expression import Predicate
 from .log import AppLog
 from .renderers import htmlrender, jsonldrender
 from .slugify import slugify
@@ -288,7 +290,7 @@ async def worker_assign_metadata(
     ],
     background_tasks: BackgroundTasks,
     archives: Annotated[list[str], Query()] = FOTOWARE_ARCHIVES,
-    num: Annotated[int, Query(ge=1, le=1000)] = 100,
+    limit: Annotated[int, Query(ge=1)] = 100,
     tasks: Annotated[list[Task], Query()] = [Task.uuid],
 ):
     """
@@ -303,7 +305,7 @@ async def worker_assign_metadata(
     )
     AppLog.info(f"Query for worker: {query}")
 
-    background_tasks.add_task(update_assets, tasks, archives, SE(query), num)
+    background_tasks.add_task(update_assets, tasks, archives, SE(query), limit)
     return {"query": query, "message": f"Background task started"}
 
 
@@ -382,6 +384,7 @@ if ENV == "development":
                 {
                     "token": tokencontents(aud=role, sub=subject, dur=dur),
                     "duration": dur,
+                    "valid_through": (datetime.utcnow() + dur).isoformat(),
                     "role": role,
                 }
             )

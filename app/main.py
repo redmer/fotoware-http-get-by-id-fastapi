@@ -248,8 +248,8 @@ async def worker_jsonld_manifest(
         ),
     ],
     archives: Annotated[list[str], Query()] = FOTOWARE_ARCHIVES,
-    num: Annotated[int, Query(ge=1, le=1000)] = 100,
-    after: Annotated[str | None, Query(regex=r"\d{4}-\d{2}-\d{2}")] = None,
+    limit: Annotated[int, Query(ge=1)] = 100,
+    since: Annotated[str | None, Query()] = None,
 ):
     """
     Return a JSON-LD manifest of all assets in archives
@@ -259,10 +259,19 @@ async def worker_jsonld_manifest(
       with the modified date of the last result.
     """
     query = -SE.empty(FOTOWARE_FIELDNAME_UUID)  # where not empty
-    if after is not None:
-        query = query & SE.eq("mtf", after)  # paginate this endpoint with dateModified
+    if since is not None:
+        # paginate this endpoint with date modified
+        query = query & SE.eq(Predicate.FileModificationFrom, since)
 
-    return [jsonldrender(a) for a in fotoware.find_all(archives, query, n=num)]
+    assets = [jsonldrender(a) for a in fotoware.iter_n(archives, query, n=limit)]
+    return {
+        "page": {
+            "since": since or assets[1].get("dateModified"),
+            "until": assets[-1].get("dateModified"),
+            "limit": len(assets),
+        },
+        "results": assets,
+    }
 
 
 @app.get("/-/background-worker/assign-metadata", tags=["background worker", "tasks"])

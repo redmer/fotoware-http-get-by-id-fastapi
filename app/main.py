@@ -2,6 +2,7 @@ import itertools
 from datetime import datetime
 from mimetypes import guess_type
 from typing import Annotated
+import urllib.parse
 
 from fastapi import (
     BackgroundTasks,
@@ -69,13 +70,13 @@ async def identify_file(
     """
 
     asset = fotoware.find(FOTOWARE_ARCHIVES, SE.eq(FOTOWARE_FIELDNAME_UUID, identifier))
-    lname, ext = asset["filename"].split(".", maxsplit=1)
-    filename = slugify(lname) + "." + ext
+    basename, ext = asset["filename"].rsplit(".", maxsplit=1)
+    slug = slugify(basename) + "." + ext
 
     if (qToken := request.query_params.get("token")) is not None:
-        return f"/doc/{identifier}/{filename}?token={qToken}"  # Re-send token query parameter along
+        return f"/doc/{identifier}/{slug}?token={qToken}"  # Re-send token query parameter along
 
-    return f"/doc/{identifier}/{filename}"
+    return f"/doc/{identifier}/{slug}"
 
 
 @app.get(
@@ -237,7 +238,11 @@ async def render_rendition(
     )
 
 
-@app.get("/-/background-worker/jsonld-manifest", tags=["background worker", "json-ld"])
+@app.get(
+    "/-/background-worker/jsonld-manifest",
+    tags=["background worker", "json-ld"],
+    response_class=JSONResponse,
+)
 async def worker_jsonld_manifest(
     authed: Annotated[
         bool,
@@ -266,14 +271,14 @@ async def worker_jsonld_manifest(
         query = query & SE.eq(Predicate.FileModificationFrom, since)
 
     assets = [jsonldrender(a) for a in fotoware.iter_n(archives, query, n=limit)]
-    return {
-        "page": {
-            "since": since or assets[1].get("dateModified"),
-            "until": assets[-1].get("dateModified"),
-            "limit": len(assets),
-        },
-        "results": assets,
-    }
+    until = assets[-1].get("dateModified")
+    qp = urllib.parse.urlencode(
+        {"limit": limit, "since": until, "archives": archives}, doseq=True
+    )
+    return JSONResponse(
+        content=assets,
+        headers={"Link": f'</-/background-worker/jsonld-manifest?{qp}; rel="next"'},
+    )
 
 
 @app.get("/-/background-worker/assign-metadata", tags=["background worker", "tasks"])

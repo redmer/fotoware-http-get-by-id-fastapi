@@ -1,3 +1,4 @@
+import urllib.parse
 from mimetypes import guess_type
 from typing import Any
 
@@ -22,11 +23,13 @@ def jsonldrender(asset: Asset) -> dict[str, Any]:
     identifier = metadata_field(FOTOWARE_FIELDNAME_UUID)  # ID is single str
     if not isinstance(identifier, str):
         return {}  # only regular
-    lname, ext = asset["filename"].split(".", maxsplit=1)
-    filename = slugify(lname) + "." + ext
+    filename = asset["filename"]
+    basename, ext = filename.rsplit(".", maxsplit=1)
+    slug = slugify(basename) + "." + ext
+
     subject = CANONICAL_HOST_BASE + identifier  # canonical
-    local_render = f"https://{HOST}/doc/{identifier}/{filename}"
-    fotoware_url = FOTOWARE_HOST + asset["href"]
+    local_render = f"https://{HOST}/doc/{identifier}/{slug}"
+    fotoware_url = FOTOWARE_HOST + urllib.parse.quote(asset["href"], safe="()%/")
 
     mime = guess_type(filename)[0]
 
@@ -37,7 +40,7 @@ def jsonldrender(asset: Asset) -> dict[str, Any]:
         "dcterms:type": asset.get("doctype"),
         "mainEntityOfPage": fotoware_url,
         "url": local_render,
-        "name": lname,
+        "name": filename,
         "dcterms:title": builtin_field("title"),
         "description": builtin_field("description"),
         "keywords": builtin_field("tags"),

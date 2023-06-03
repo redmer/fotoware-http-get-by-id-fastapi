@@ -106,5 +106,8 @@ do not require authenticated access
 RATE_LIMIT = os.getenv("RATE_LIMIT", "25/minute; 50/hour; 75/day")
 """Rate-limit the API endpoints outside development mode"""
 
-MEMCACHED_HOST = os.getenv("MEMCACHED_HOST", "memcached")
-"""String containing the path to a UNIX domain socket for the Memcached file cache"""
+STYLESHEETS = os.getenv("STYLESHEETS", "").split()
+"""Whitespace separated URLs of CSS stylesheets for HTML renders"""
+
+STYLESHEETS_DARK_MODE = os.getenv("STYLESHEETS_DARK_MODE", "").split()
+"""Whitespace separated URLs of CSS stylesheets for HTML renders, in dark mode"""

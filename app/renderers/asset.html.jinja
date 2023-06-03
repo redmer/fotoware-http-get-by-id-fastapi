@@ -3,6 +3,12 @@
 
 <head>
     <title>{{ asset.name }}</title>
+    {% for css in stylesheets %}
+        <link rel="stylesheet" href="{{ css }}">
+    {% endfor %}
+    {% for css in stylesheets_dark_mode %}
+        <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="{{ css }}">
+    {% endfor %}
 </head>
 
 <body>

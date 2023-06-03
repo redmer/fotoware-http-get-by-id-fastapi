@@ -54,12 +54,6 @@ FOTOWARE_FIELDNAME_IMGSUBJ = os.getenv("FOTOWARE_FIELDNAME_IMGSUBJ")
 ID of the field for recognized objects on an image. This field MUST be of Bag-type and
 will be filled with keywords from the recognizer. The values are always in English.
 """
-FOTOWARE_SEARCH_EXPRESSION_SUFFIX = os.getenv("FOTOWARE_SEARCH_EXPRESSION_SUFFIX", "")
-"""
-Enable additional filtering on retrieved assets.
-For example, `"and 601:Done"` requires field `601` to be `Done`.
-Reference: <https://learn.fotoware.com/On-Premises/FotoWeb/Navigating_and_searching_to_find_your_assets/Searching_in_FotoWeb/001_Searching_for_assets/FotoWare_Search_Expressions_Reference>
-"""
 
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_urlsafe())
 """
@@ -105,6 +99,9 @@ do not require authenticated access
 
 RATE_LIMIT = os.getenv("RATE_LIMIT", "25/minute; 50/hour; 75/day")
 """Rate-limit the API endpoints outside development mode"""
+
+REDIS_HOST = os.getenv("REDIS_HOST", "redis:6379/")
+"""String containing the path to a UNIX domain socket for the Redis-based file cache"""
 
 STYLESHEETS = os.getenv("STYLESHEETS", "").split()
 """Whitespace separated URLs of CSS stylesheets for HTML renders"""

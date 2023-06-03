@@ -7,10 +7,17 @@ services:
       - "5001:80"
     env_file: .env
     depends_on:
-      - memcached
+      - redis
 
-  memcached:
-    image: "memcached:alpine"
-    command:
-      - memcached
-      - --memory-limit=512
+  redis:
+    image: docker.io/bitnami/redis:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+
+volumes:
+  redis_data:
+    driver: local

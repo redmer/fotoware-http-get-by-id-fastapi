@@ -4,23 +4,12 @@ from typing import Any
 
 from ..config import CANONICAL_HOST_BASE, FOTOWARE_FIELDNAME_UUID, FOTOWARE_HOST, HOST
 from ..fotoware.apitypes import Asset
+from ..fotoware.assets import builtin_field, metadata_field
 from ..slugify import slugify
 
 
 def jsonldrender(asset: Asset) -> dict[str, Any]:
-    def builtin_field(name: str):
-        for field in asset["builtinFields"]:
-            if field["field"] == name:
-                return field["value"]
-        return None
-
-    def metadata_field(name: str):
-        for k, v in asset["metadata"].items():
-            if k == name:
-                return v["value"]
-        return None
-
-    identifier = metadata_field(FOTOWARE_FIELDNAME_UUID)  # ID is single str
+    identifier = metadata_field(asset, FOTOWARE_FIELDNAME_UUID)  # ID is single str
     if not isinstance(identifier, str):
         return {}  # only regular
     filename = asset["filename"]
@@ -41,9 +30,9 @@ def jsonldrender(asset: Asset) -> dict[str, Any]:
         "mainEntityOfPage": fotoware_url,
         "url": local_render,
         "name": filename,
-        "dcterms:title": builtin_field("title"),
-        "description": builtin_field("description"),
-        "keywords": builtin_field("tags"),
+        "dcterms:title": builtin_field(asset, "title"),
+        "description": builtin_field(asset, "description"),
+        "keywords": builtin_field(asset, "tags"),
         "encodingFormat": mime or None,
         "fileSize": asset.get("filesize"),
         "dateCreated": asset.get("created"),  # already ISO format

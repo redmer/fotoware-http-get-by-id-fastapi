@@ -1,8 +1,5 @@
-from base64 import b32encode
 from enum import Enum
-from random import choice
-from typing import Callable, Iterable
-from uuid import uuid4
+from typing import Awaitable, Callable, Iterable
 
 from fastapi import HTTPException
 
@@ -15,6 +12,7 @@ from .config import (
 from .fotoware import api
 from .fotoware.apitypes import Asset
 from .log import AppLog
+from .tasks import calc_detectobject, calc_perceptualhash, calc_sha256, calc_uuid
 
 
 class Task(str, Enum):
@@ -26,46 +24,21 @@ class Task(str, Enum):
     uuid = "uuid4"
 
 
-IDENTIFIER_RE = "^[rjkmtvyz][a-z0-9]+$"
-
-
-def calc_uuid(asset: Asset) -> tuple[str, str]:
-    """
-    Generate a globally unique ID. The ID is case-insensitive and always starts with a
-    letter, for systems that expect a C-style identifier.
-    """
-
-    prefix = choice("rjkmtvyz")  # e.g. LD serializations may expect a C-style localname
-    guid = b32encode(uuid4().bytes).decode().replace("=", "").lower()
-
-    return asset["href"], prefix + guid
-
-
-def calc_sha256(asset: Asset):
-    raise NotImplementedError()
-
-
-def calc_perceptual_hash(asset: Asset):
-    raise NotImplementedError()
-
-
-def calc_object_detection(asset: Asset):
-    raise NotImplementedError()
-
-
 def task_info(
     task: Task,
-) -> tuple[str, Callable[[Asset], tuple[str, str]]] | tuple[None, None]:
+) -> (
+    tuple[str, Callable[[Asset], Awaitable[str | list[str] | None]]] | tuple[None, None]
+):
     """Fieldname used for task"""
     return {
-        Task.object_detection: (FOTOWARE_FIELDNAME_IMGSUBJ, calc_object_detection),
-        Task.perceptual_hash: (FOTOWARE_FIELDNAME_PHASH, calc_perceptual_hash),
+        Task.object_detection: (FOTOWARE_FIELDNAME_IMGSUBJ, calc_detectobject),
+        Task.perceptual_hash: (FOTOWARE_FIELDNAME_PHASH, calc_perceptualhash),
         Task.sha256: (FOTOWARE_FIELDNAME_SHA256, calc_sha256),
         Task.uuid: (FOTOWARE_FIELDNAME_UUID, calc_uuid),
     }.get(task, (None, None))
 
 
-def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
+async def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
     """
     Execute update tasks for assets. If the file a already has a value for that metadata
     field, it is NOT recalculated.
@@ -73,6 +46,8 @@ def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
     combined_updates = dict()
 
     for asset in assets:
+        href = asset["href"]
+
         for task in tasks:
             task_field_name, task_func = task_info(task)
 
@@ -82,7 +57,10 @@ def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
             if asset.get("metadata", {}).get(task_field_name) not in [None, ""]:
                 continue  # already assigned
 
-            href, value = task_func(asset)  # possibly expensive
+            value = await task_func(asset)  # possibly expensive
+            if value is None:
+                continue  # no value derived
+
             combined_updates[href] = {
                 task_field_name: {"value": value},
                 **combined_updates.get(href, {}),
@@ -90,7 +68,7 @@ def exec_update_tasks(*, assets: Iterable[Asset], tasks: Iterable[Task]):
 
     for href, metadata in combined_updates.items():
         try:
-            api.update_asset_metadata(href, metadata)
+            await api.update_asset_metadata(href, metadata)
         except HTTPException as err:
             if err.status_code >= 500:
                 AppLog.error(f"Update of '{href}' ({metadata}) failed: {err.detail}")

@@ -35,7 +35,7 @@ original rendition of a file with ID '123456789' (linebreaks for readiblity):
 
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any
 
 import jwt
 from fastapi import Depends, HTTPException, Query, Request, status
@@ -109,8 +109,8 @@ def decode(token: str) -> dict[str, Any]:
 class QueryHeaderAuth:
     """Checks presence of JWT token in Query (token=) or Header (Authorization:)"""
 
-    def __init__(self, *, raise_=True, aud: TokenAud, maxdur: timedelta):
-        self.auth_is_required = raise_
+    def __init__(self, *, required=True, aud: TokenAud, maxdur: timedelta):
+        self.auth_is_required = required
         self.aud = aud
         self.maxdur = maxdur
 

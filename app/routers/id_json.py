@@ -1,15 +1,15 @@
 from typing import Annotated
 
-from fastapi import Path, Request, APIRouter
+from fastapi import APIRouter, Path, Request
 from fastapi.responses import RedirectResponse
 
 from .. import fotoware
-from ..renderers import reprs
-from ..tasks.uuid import IDENTIFIER_RE
 from ..config import FOTOWARE_ARCHIVES as ARCHIVES
 from ..config import FOTOWARE_FIELDNAME_UUID as UUID_FIELD
 from ..fotoware.search_expression import SE
+from ..renderers import reprs
 from ..slugify import slugify
+from ..tasks.uuid import IDENTIFIER_RE
 
 router = APIRouter()
 

@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from ..fotoware.apitypes import Asset
 
-IDENTIFIER_RE = "^[rjkmtvyz][a-z0-9]+$"
+IDENTIFIER_RE = "^[rjkmtvyz][a-z2-7]+$"
 
 
 async def calc_uuid(asset: Asset) -> tuple[str, str]:

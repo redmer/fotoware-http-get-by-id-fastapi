@@ -27,11 +27,7 @@ async def html(asset: Asset, status_code: int = 200) -> HTMLResponse:
 async def filerendition(
     asset: Asset, traits: RenditionTrait, *, filename: str | None = None
 ) -> StreamingResponse:
-    """Retrieves the file's binary rendition"""
-
-    rendition = fotoware.renditions.find_rendition(asset["renditions"], **traits)
-    if rendition is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    """Retrieves the file's binary rendition (cached)"""
 
     if filename is None:
         basename, ext = asset["filename"].rsplit(".", maxsplit=1)
@@ -47,6 +43,11 @@ async def filerendition(
     AppLog.info(f"cache: result ({type(content)}) for cachekey: {cachekey}")
 
     if content is None:
+        # Check if right representation can be found
+        rendition = fotoware.renditions.find_rendition(asset["renditions"], **traits)
+        if rendition is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST)
+
         location = await fotoware.renditions.rendition_location(rendition)  # expensive
         r = await fotoware.assets.retrying_response(location)
         content = await r.read()
@@ -62,7 +63,7 @@ async def filerendition(
 async def filepreview(
     asset: Asset, traits: PreviewTrait, *, filename: str | None = None
 ) -> StreamingResponse:
-    """Retrieves a file's preview"""
+    """Retrieves a file's preview (cached)"""
 
     if filename is None:
         basename, ext = asset["filename"].rsplit(".", maxsplit=1)

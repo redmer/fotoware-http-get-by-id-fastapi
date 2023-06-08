@@ -2,6 +2,7 @@
 Environment variables configure behavior.
 
 The keys with `os.getenv` have defaults and are optional.
+Keys with `os.environ` are required and crash the service if not specified.
 """
 
 import os
@@ -10,9 +11,9 @@ from datetime import timedelta
 
 ENV = os.getenv("ENV", "production")
 """
-- "development": logging level more verbose, enables /docs OpenAPI documentation,
-                 enables /fotoweb remote proxy, enables /json/{id} open endpoint,
-                 enables /token endpoint for local tokens.
+- "development": logging level more verbose, enables OpenAPI documentation,
+                 enables /fotoweb remote proxy,
+                 enables endpoint for local tokens.
 """
 
 FOTOWARE_ARCHIVES = os.getenv("FOTOWARE_ARCHIVES", "5000").split()
@@ -81,7 +82,6 @@ HOST = os.getenv("HOST", "https://rdmr.eu/fotoware-http-get-by-id-fastapi")
 
 CANONICAL_HOST_BASE = os.getenv("CANONICAL_HOST_BASE", "https://" + HOST + "/")
 """For the JSON-LD manifest export, a base URL for an asset canonical URL"""
-
 
 PUBLIC_DOCTYPES = os.getenv("PUBLIC_DOCTYPES", "").split()
 """

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Request
+from fastapi import APIRouter, Path, Query, Request, Response
 from fastapi.responses import RedirectResponse
 
 from .. import fotoware
@@ -10,14 +10,22 @@ from ..fotoware.search_expression import SE
 from ..renderers import reprs
 from ..slugify import slugify
 from ..tasks.uuid import IDENTIFIER_RE
+from .responsetype import ResponseMediaType
 
 router = APIRouter()
 
 
-@router.get("/id/{identifier}", tags=["find and redirect", "json-ld"])
+@router.get(
+    "/id/{identifier}",
+    response_class=Response,
+    tags=["find and redirect", "json-ld"],
+)
 async def identify_file(
     request: Request,
     identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
+    as_: Annotated[
+        ResponseMediaType, Query(title="Force response type", alias="as")
+    ] = ResponseMediaType.Original,
 ):
     """
     Find an file by identifier, determine its best repr and 307 redirect to it.
@@ -31,7 +39,11 @@ async def identify_file(
 
     asset = await fotoware.search.find(ARCHIVES, SE.eq(UUID_FIELD, identifier))
 
-    if any(
+    # Alternative representations are forced
+    if as_ == ResponseMediaType.AsHTML:
+        return await reprs.html(asset)
+
+    if as_ == ResponseMediaType.AsJSON or any(
         [
             type in request.headers.getlist("Accept")
             for type in ["application/json", "application/ld+json"]

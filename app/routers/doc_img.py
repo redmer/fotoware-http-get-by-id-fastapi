@@ -22,6 +22,7 @@ from ..fotoware.apitypes import PreviewTrait, RenditionTrait
 from ..fotoware.search_expression import SE
 from ..renderers import reprs
 from ..tasks.uuid import IDENTIFIER_RE
+from .responsetype import ResponseMediaType
 
 router = APIRouter()
 
@@ -44,6 +45,9 @@ async def file_representation(
     identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
     filename: Annotated[str, Path()],
     background_tasks: BackgroundTasks,
+    as_: Annotated[
+        ResponseMediaType, Query(title="Force response type", alias="as")
+    ] = ResponseMediaType.Original,
 ):
     """
     Retrieves the original rendition of the file if authenticated or public.
@@ -52,6 +56,13 @@ async def file_representation(
     """
 
     asset = await fotoware.search.find(ARCHIVES, SE.eq(UUID_FIELD, identifier))
+
+    # Alternative representations are forced
+    if as_ == ResponseMediaType.AsHTML:
+        return await reprs.html(asset)
+
+    if as_ == ResponseMediaType.AsJSON:
+        return await reprs.json(asset)
 
     is_public = fotoware.assets.is_public(asset)
     if not is_public and (not authed and not is_public):

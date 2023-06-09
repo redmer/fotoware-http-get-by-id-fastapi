@@ -15,12 +15,27 @@
     <script type="application/ld+json">{{ asset | tojson }}</script>
     <article>
         <header>
-            <h1>{{ asset.name }}</h1>
+            <div class="head">
+                <h1>{{ asset.name }}</h1>
+                <h2 id="subtitle">
+                    {{ asset["dcterms:type"] | capitalize }}
+                    (<code>{{ asset.encodingFormat | default("application/octet-stream", true) }}</code>):
+                    {{ asset["dcterms:title"] | default("--", true) }}
+                </h2>
+            </div>
         </header>
         <main>
             <section>
+                <img
+                    id="preview"
+                    src="/img/{{ asset.identifier }}/preview/preview-{{ asset.name }}?size=400" 
+                    alt="Preview: {{ asset["dcterms:title"] }}" 
+                    width=400
+                />
+            </section>
+            <section>
                 <h2>Metadata</h2>
-                <dl>
+                <dl id="metadata">
                     <dt>URL identifier</dt>
                     <dd><a href="{{ asset['@id'] }}">{{ asset['@id'] }}</a></dd>
                     <dt>Identifier</dt>
@@ -53,7 +68,7 @@
             </section>
             <section>
                 <h2>JSON-LD representation</h2>
-                <code><pre>{{ asset | tojson(indent=4) }}</pre></code>
+                <code id="json"><pre>{{ asset | tojson(indent=4) }}</pre></code>
             </section>
         </main>
     </article>

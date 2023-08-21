@@ -7,7 +7,7 @@ from ..fotoware.apitypes import Asset
 IDENTIFIER_RE = "^[rjkmtvyz][a-z2-7]+$"
 
 
-async def calc_uuid(asset: Asset) -> tuple[str, str]:
+async def calc_uuid(asset: Asset) -> str:
     """
     Generate a globally unique ID. The ID is case-insensitive and always starts with a
     letter, for systems that expect a C-style identifier.

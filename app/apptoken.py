@@ -3,12 +3,13 @@ The unfettered ID-based access of assets with this service creates a problem if 
 to the binary representation of a file should be time-limited. Therefore, this service
 uses a KEY to SIGN an access TOKEN. The token is a 'JWT', with the following claims: 
 
-- `sub`: the identifier of the file and how it may be accessed
+- `sub`: the identifier of the file
+- `aud`: the allowed endpoint (token audience)
 - `iat`: the timestamp of token issue, to calculate validity duration
 - `exp`: the timestamp of token expiration, after which the token is no longer valid.
 
 The `sub` claim prevents reuse of the token for the same endpoint across different files
-and for the same file across different endpoints. The `exp` claim prevents long-term
+and `aud` for across different endpoints. The `exp` claim prevents long-term
 reuse of the token to access the file, e.g. by different end-users. The `iat` claim,
 combined with `exp`, limits the maximum duration of a valid token.
 
@@ -19,18 +20,17 @@ Limit replay attacks by limiting the time the token is valid. For file access en
 maximum validity is set to `TOKEN_MAX_DURATION_SHORT` (default: 15 minutes), for others
 `TOKEN_MAX_DURATION_LONG` is used (default: 1 year). The validator uses a 30sec leeway.
 
-The `sub` key is `"{TokenAud}:{Identifier}"`, where `{TokenAud}` indicates the allowed
-interaction with a three-letter string from the below enum `TokenAud`. `{Identifier}`
-is replaced by the assets's identifier.
+The `sub` key is the identifier of the file. The `aud` key indicates the allowed
+interaction with a three-letter string from the below enum `TokenAud`.
 
 If the JWT_SECRET is "sekret", then following token encodes access to the
 original rendition of a file with ID '123456789' (linebreaks for readiblity):
 
     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
     .
-    eyJzdWIiOiJvcmk6MTIzNDU2Nzg5MCIsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjU5MDIyfQ
+    eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoib3JpIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNTkwMjJ9
     .
-    KmaX3sbdo6RCAWF_XbUw-px3sTkPlkMIvCxz1Klts3A
+    HNzcYtBpJJDUBZocVdLqtKDbD1EIejJfYZ3-63Zvgmo
 """
 
 from datetime import datetime, timedelta, timezone
@@ -59,8 +59,14 @@ def sub_aud_dur_claims(token: str, /) -> tuple[str, TokenAud, timedelta, dict]:
     """Return token's subject identifier, subject audience, validity duration, claims."""
     try:
         claims = decode(token)
-        audstr, sub = claims.get("sub", f"{TokenAud.NONE}:").split(":", maxsplit=1)
-        aud = TokenAud(audstr)
+        if ":" in claims.get("sub", ":") and claims.get("aud") is None:
+            # The old parsing code uses colon-sep `{aud}:{sub}` in `sub` claim.
+            # These tokens were deprecated with v4.2.0
+            audstr, sub = claims.get("sub", f"{TokenAud.NONE}:").split(":", maxsplit=1)
+            aud = TokenAud(audstr)
+        else:
+            sub = claims.get("sub", "")
+            aud = TokenAud(claims.get("aud", TokenAud.NONE))
         iat = datetime.fromtimestamp(claims["iat"])
         exp = datetime.fromtimestamp(claims["exp"])
         return sub, aud, exp - iat, claims
@@ -81,12 +87,11 @@ def tokencontents(*, sub: str, aud: TokenAud, dur: timedelta, **claims) -> str:
     Returns:
         The encoded JWT token with the above claims.
     """
-    _sub = ":".join([aud, sub])
     _iat = datetime.now(tz=timezone.utc)
     _exp = datetime.now(tz=timezone.utc) + dur
 
     return jwt.encode(
-        {**claims, "sub": _sub, "iat": _iat, "exp": _exp},
+        {**claims, "sub": sub, "aud": aud, "iat": _iat, "exp": _exp},
         JWT_SECRET,
         algorithm="HS256",
     )

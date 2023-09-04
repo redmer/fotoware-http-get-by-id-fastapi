@@ -67,20 +67,22 @@ As this service tries to be stateless, no services that provide token are regist
 
 ## Tokens
 
-The JWT token contains three claims, signed with a previously shared secret (`JWT_SECRET`).
+The JWT token contains four claims, signed with a previously shared secret (`JWT_SECRET`).
 The `exp` and `iat` claims are as JWT specifies them.
 Ensure that the validity duration does not exceed the value of `TOKEN_MAX_DURATION`.
 
-The `sub` claims concatenates a type (see below), `:`, and the file identifier.[⁵](#fn5)
-The audience types and the algorithm for the construction of the token can be verified in [apptoken.py](app/apptoken.py).
+The `sub` claim contains the file identifier.
+The `aud` claim contains the audience types, according to the below table.
+The algorithm for the construction of the token can be verified in [apptoken.py](app/apptoken.py).
 
-| Token audience        | `sub` claim prefix | sep | `sub` claim suffix |
-| --------------------- | ------------------ | --- | ------------------ |
-| Preview asset         | `pre`              | `:` | _file identifier_  |
-| Asset rendition       | `rnd`              | `:` | _file identifier_  |
-| Get asset original    | `ori`              | `:` | _file identifier_  |
-| JSON-LD manifest      | `jld`              | `:` |                    |
-| Update asset metadata | `uid`              | `:` |                    |
+| Token audience        | `sub` claim prefix | Endpoint                                 |
+| --------------------- | ------------------ | ---------------------------------------- |
+| Preview asset         | `pre`              | `/img/{identifier}/preview/{filename}`   |
+| Asset rendition       | `rnd`              | `/img/{identifier}/rendition/{filename}` |
+| Get asset original    | `ori`              | `/doc/{identifier}/{filename}`           |
+| JSON-LD manifest      | `jld`              | `/-/data/jsonld-manifest`                |
+| Update asset metadata | `uid`              | `/-/background-worker/assign-metadata`   |
+| Update asset metadata | `uid`              | `/-/webhooks/assign-metadata`            |
 
 ## Known issues
 
@@ -98,7 +100,6 @@ The ID value space was based on the choice of a globally random UUID.
 The hex encoding of a UUID is 36 chars long, but with low entropy: only [0-9a-f] are used.
 The UUID bytes are instead encoded with case-insensitive Base32 ([a-z2-7]) and then prefixed with a random letter.
 That letter satisfies systems that expect a C-style identifier (i.e., not beginning with a number).  
-<a id="fn4" href="#fn4">4:</a> During testing, you can use use `/-/tokens/new` to generate access tokens. That does require a shared secret (`JWT_SECRET`) to be set.  
-<a id="fn5" href="#fn5">5:</a> Splitting these claims shortens the token by 16 letters.
+<a id="fn4" href="#fn4">4:</a> During testing, you can use use `/-/tokens/new` to generate access tokens. That does require a shared secret (`JWT_SECRET`) to be set.
 
 </small>

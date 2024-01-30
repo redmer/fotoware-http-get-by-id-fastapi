@@ -8,12 +8,11 @@
     "/home/vscode/.local/lib/python3.11/site-packages"
   ],
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.rulers": [
       88
     ],
+    "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "editor.defaultFormatter": "ms-python.black-formatter",
   "editor.formatOnSaveMode": "file",
   "editor.formatOnSave": true,
   "[jsonc]": {
@@ -24,5 +23,9 @@
   },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "always"
+  },
 }

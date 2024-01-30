@@ -1,16 +1,18 @@
-from typing import TypeAlias
+from typing import Optional
 
 from cashews import cache
+from cashews._typing import TTL
+
 from .config import REDIS_HOST
 
-_Value: TypeAlias = bytes | float | int | str
+type _Value = bytes | float | int | str
 
 cache.setup(f"redis://{REDIS_HOST}", suppress=True)
 
 
-async def set(name: str, value: _Value) -> bool | None:
+async def set(name: str, value: _Value, *, expire: Optional[TTL] = None) -> bool | None:
     """Set a value in the cache, optionally with expiration"""
-    return await cache.set(name, value)
+    return await cache.set(name, value, expire=expire)
 
 
 async def get(name: str, default: None = None) -> bytes | None:

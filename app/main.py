@@ -3,8 +3,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_ipaddr
 
-from .config import ENV
-from .config import RATE_LIMIT
+from .config import ENV, RATE_LIMIT
 from .fotoware import api
 from .routers import doc_img, id_json, tasks
 

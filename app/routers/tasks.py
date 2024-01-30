@@ -88,7 +88,7 @@ async def worker_assign_metadata(
     AppLog.info(f"Query for worker: {query}")
 
     background_tasks.add_task(update_assets, tasks, archives, SE(query), limit)
-    return {"query": query, "message": f"Background task started"}
+    return {"query": query, "message": "Background task started"}
 
 
 async def update_assets(tasks: list[Task], archives: list[str], query: SE, max: int):
@@ -125,4 +125,4 @@ async def webhook_assign_metadata(
         return
 
     background_tasks.add_task(exec_update_tasks, assets=[asset], tasks=tasks)
-    return {"asset": asset, "message": f"Background task(s) started"}
+    return {"asset": asset, "message": "Background task(s) started"}

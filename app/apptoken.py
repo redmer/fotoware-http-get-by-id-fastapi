@@ -70,7 +70,7 @@ def sub_aud_dur_claims(token: str, /) -> tuple[str, TokenAud, timedelta, dict]:
         iat = datetime.fromtimestamp(claims["iat"])
         exp = datetime.fromtimestamp(claims["exp"])
         return sub, aud, exp - iat, claims
-    except:
+    except Exception:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
 

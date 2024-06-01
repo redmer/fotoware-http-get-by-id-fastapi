@@ -11,6 +11,8 @@ async def calc_uuid(asset: Asset) -> str:
     """
     Generate a globally unique ID. The ID is case-insensitive and always starts with a
     letter, for systems that expect a C-style identifier.
+
+    This identifier is an Base32 encoded UUID-v4.
     """
 
     prefix = choice("rjkmtvyz")  # some LD serializations may expect a C-style localname

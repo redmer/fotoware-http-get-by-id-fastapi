@@ -1,7 +1,7 @@
 """
 The unfettered ID-based access of assets with this service creates a problem if access
 to the binary representation of a file should be time-limited. Therefore, this service
-uses a KEY to SIGN an access TOKEN. The token is a 'JWT', with the following claims: 
+uses a KEY to SIGN an access TOKEN. The token is a 'JWT', with the following claims:
 
 - `sub`: the identifier of the file
 - `aud`: the allowed endpoint (token audience)
@@ -42,6 +42,7 @@ from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import JWT_SECRET
+from .resource_identifier import getidentifier
 
 
 class TokenAud(str, Enum):
@@ -131,7 +132,9 @@ class QueryHeaderAuth:
                 raise HTTPException(status.HTTP_401_UNAUTHORIZED)  # goto except handler
 
             sub, aud, dur, _ = sub_aud_dur_claims(tokencontents)
-            identifier = request.path_params.get("identifier", "")
+            res = request.query_params.get("resource", "")
+            identifier = getidentifier(fromresource=res)
+
             if not all([identifier == sub, self.aud == aud, self.maxdur >= dur]):
                 raise HTTPException(status.HTTP_403_FORBIDDEN)
 

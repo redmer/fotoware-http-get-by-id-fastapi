@@ -17,7 +17,7 @@ from ..renderers.reprs import jsonldrender
 router = APIRouter()
 
 
-@router.get("/-/data/jsonld-manifest", tags=["tasks", "json-ld"])
+@router.get("/-/data/jsonld-manifest", tags=["tasks", "metadata"])
 async def worker_jsonld_manifest(
     authed: Annotated[
         bool,
@@ -58,7 +58,7 @@ async def worker_jsonld_manifest(
     )
 
 
-@router.get("/-/background-worker/assign-metadata", tags=["tasks"])
+@router.get("/-/background-worker/assign-metadata", tags=["tasks", "metadata"])
 async def worker_assign_metadata(
     authed: Annotated[
         bool,
@@ -98,7 +98,7 @@ async def update_assets(tasks: list[Task], archives: list[str], query: SE, max: 
     await exec_update_tasks(assets=assets_wo_id, tasks=tasks)
 
 
-@router.post("/-/webhooks/assign-metadata", tags=["webhook"])
+@router.post("/-/webhooks/assign-metadata", tags=["webhook", "metadata"])
 async def webhook_assign_metadata(
     authed: Annotated[
         bool,

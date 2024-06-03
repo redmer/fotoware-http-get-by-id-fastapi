@@ -1,56 +1,38 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request, Response
 from fastapi.responses import RedirectResponse
 
-from .. import fotoware
-from ..config import FOTOWARE_ARCHIVES as ARCHIVES
-from ..config import FOTOWARE_FIELDNAME_UUID as UUID_FIELD
-from ..fotoware.search_expression import SE
-from ..renderers import reprs
-from ..slugify import slugify
+from ..resource_identifier import getresourceurl
 from ..tasks.uuid import IDENTIFIER_RE
-from .responsetype import ResponseMediaType
 
 router = APIRouter()
 
 
-@router.get(
-    "/id/{identifier}",
-    response_class=Response,
-    tags=["find and redirect", "json-ld"],
-)
+@router.get("/id/{identifier}", response_class=Response, tags=["find and redirect"])
 async def identify_file(
-    request: Request,
     identifier: Annotated[str, Path(regex=IDENTIFIER_RE)],
+    request: Request,
     as_: Annotated[
-        ResponseMediaType, Query(title="Force response type", alias="as")
-    ] = ResponseMediaType.Original,
+        Literal["original", "json", "html"] | None,
+        Query(title="Force response type", alias="as", deprecated=True),
+    ] = None,
 ):
     """
-    Find an file by identifier, determine its best repr and 307 redirect to it.
-
-    This endpoint is unauthenticated and does NOT pass on query parameters.
-    The best representation is:
-    - JSON, when JSON is requested in the Accept header.
-    - When the file is public or request is authenticated, the file binary.
-    - Else: the index HTML.
+    Construct a file URL identifier and redirect to its About page.
     """
 
-    asset = await fotoware.search.find(ARCHIVES, SE.eq(UUID_FIELD, identifier))
+    res = getresourceurl(fromidentifier=identifier)
 
-    # Alternative representations are forced
-    if as_ == ResponseMediaType.AsHTML:
-        return await reprs.html(asset)
+    if as_ is not None:
+        # The deprecated ?as query parameter
+        if as_ == "original":
+            render_asset = str(request.url_for("render_asset"))
+            return RedirectResponse(render_asset + f"?original=1&resource={res}")
 
-    if as_ == ResponseMediaType.AsJSON or any(
-        [
-            type in request.headers.getlist("Accept")
-            for type in ["application/json", "application/ld+json"]
-        ]
-    ):
-        return await reprs.json(asset)
+        about = str(request.url_for("present_resource"))
+        return RedirectResponse(about + f"?resource={res}&format={as_}")
 
-    basename, ext = asset["filename"].rsplit(".", maxsplit=1)
-    slug = slugify(basename) + "." + ext
-    return RedirectResponse(f"/doc/{identifier}/{slug}")
+    # This endpoint only redirects to the about renderer
+    about = str(request.url_for("present_resource"))
+    return RedirectResponse(about + f"?resource={res}")

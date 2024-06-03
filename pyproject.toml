@@ -8,7 +8,7 @@ readme = "README.md"
 # packages = [{include = "fotoware_http_get_by_id_fastapi"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 fastapi = "^0.111.0"
 uvicorn = "^0.21.1"
 PyJWT = "^2.6.0"

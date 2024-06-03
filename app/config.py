@@ -87,6 +87,15 @@ PUBLIC_DOCTYPES = os.getenv("PUBLIC_DOCTYPES", "").split()
 """
 A whitespace separated list of doctypes that do not require authenticated access.
 Reference: <https://learn.fotoware.com/Integrations_and_APIs/001_The_FotoWare_API/FotoWare_API_Overview/Document_Types>
+
+PUBLIC_DOCTYPES, PUBLIC_ARCHIVES and PUBLIC_METADATA_KEY_VALUE work complimentary.
+If an asset matches on ANY of these PUBLIC_* keys, it is determined public.
+"""
+
+PUBLIC_ARCHIVES = os.getenv("PUBLIC_ARCHIVES", "").split()
+"""
+A whitespace separated list of archive IDs that are fully publicly accessible.
+This must be a subset of the archives in FOTOWARE_ARCHIVES.
 """
 
 PUBLIC_METADATA_KEY, PUBLIC_METADATA_VALUE = os.getenv(

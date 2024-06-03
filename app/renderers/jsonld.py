@@ -2,10 +2,10 @@ import urllib.parse
 from mimetypes import guess_type
 from typing import Any
 
-from ..config import CANONICAL_HOST_BASE, FOTOWARE_FIELDNAME_UUID, FOTOWARE_HOST, HOST
+from ..config import FOTOWARE_FIELDNAME_UUID, FOTOWARE_HOST, HOST
 from ..fotoware.apitypes import Asset
 from ..fotoware.assets import builtin_field, metadata_field
-from ..slugify import slugify
+from ..resource_identifier import getresourceurl
 
 
 def jsonldrender(asset: Asset) -> dict[str, Any]:
@@ -13,11 +13,9 @@ def jsonldrender(asset: Asset) -> dict[str, Any]:
     if not isinstance(identifier, str):
         return {}  # only regular
     filename = asset["filename"]
-    basename, ext = filename.rsplit(".", maxsplit=1)
-    slug = slugify(basename) + "." + ext
 
-    subject = CANONICAL_HOST_BASE + identifier  # canonical
-    local_render = f"https://{HOST}/doc/{identifier}/{slug}"
+    subject = getresourceurl(fromidentifier=identifier)  # canonical
+    local_render = f"https://{HOST}/-/about?resource={subject}"
     fotoware_url = FOTOWARE_HOST + urllib.parse.quote(asset["href"], safe="()%/")
 
     mime = guess_type(filename)[0]

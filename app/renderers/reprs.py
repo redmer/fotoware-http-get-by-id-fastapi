@@ -71,7 +71,7 @@ async def filepreview(
     media_type = guess_type(asset["filename"])[0] or "application/octet-stream"
 
     identifier = metadata_field(asset, UUID_FIELD)
-    if type(identifier) != str:
+    if not isinstance(identifier, str):
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "No one identifier")
 
     cachekey = identifier + ":" + fotoware.apitypes.traitkey(traits)

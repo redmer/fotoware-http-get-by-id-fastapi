@@ -4,10 +4,10 @@
 <head>
     <title>{{ asset.name }}</title>
     {% for css in stylesheets %}
-        <link rel="stylesheet" href="{{ css }}">
+    <link rel="stylesheet" href="{{ css }}">
     {% endfor %}
     {% for css in stylesheets_dark_mode %}
-        <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="{{ css }}">
+    <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="{{ css }}">
     {% endfor %}
 </head>
 
@@ -26,12 +26,8 @@
         </header>
         <main>
             <section>
-                <img
-                    id="preview"
-                    src="/img/{{ asset.identifier }}/preview/preview-{{ asset.name }}?size=400" 
-                    alt="Preview: {{ asset["dcterms:title"] }}" 
-                    width=400
-                />
+                <img src="/-/asset/preview?size=600&resource={{ asset['@id'] }}" id="preview"
+                    alt="Preview: {{ asset.description }}" width="600" />
             </section>
             <section>
                 <h2>Metadata</h2>

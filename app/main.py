@@ -5,7 +5,7 @@ from slowapi.util import get_ipaddr
 
 from .config import ENV, RATE_LIMIT
 from .fotoware import api
-from .routers import doc_img, id_json, tasks
+from .routers import doc_img, id_json, robots_txt, tasks
 
 app_desc = """Regular, unauthenticated GET requests to retrieve a Fotoware asset.
     
@@ -19,10 +19,12 @@ app = FastAPI(
     openapi_url="/-/openapi.json",
     docs_url="/-/docs/swagger",
     redoc_url="/-/docs/redoc",
+    lifespan=api.api_lifespan,
 )
 app.include_router(id_json.router)
 app.include_router(doc_img.router)
 app.include_router(tasks.router)
+app.include_router(robots_txt.router)
 
 # IP-based rate limiter.
 limiter = Limiter(

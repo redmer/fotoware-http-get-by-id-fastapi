@@ -108,3 +108,6 @@ STYLESHEETS = os.getenv("STYLESHEETS", "").split()
 
 STYLESHEETS_DARK_MODE = os.getenv("STYLESHEETS_DARK_MODE", "").split()
 """Whitespace separated URLs of CSS stylesheets for HTML renders, in dark mode"""
+
+DARK_VISITORS_ACCESS_TOKEN = os.getenv("DARK_VISITORS_ACCESS_TOKEN", "")
+"""Automatically block new AI agents with a token from <https://darkvisitors.com/>."""

@@ -25,8 +25,8 @@ Unauthenticated endpoints:
 
 Authenticated endpoints, only required if asset is not public:
 
-- `GET /-/about?resource` renders asset metadata[¹](#fn1)
-  - `GET /-/doc?resource,format=html|json` renders a preview page or a JSON description[¹](#fn1)
+- `GET /-/about?resource` renders asset metadata
+  - `GET /-/doc?resource,format=html|json` renders a preview page or a JSON description
 - `GET /-/asset/preview?resource,size,w,h,square` renders a preview (images and documents)[²](#fn2)
 - `GET /-/asset/render?resource,original,profile,size,w,h` renders a specific rendition (images only)[²](#fn2)
 
@@ -90,8 +90,15 @@ Ensure that a single asset only appears in a single archive.
 
 <small>
 
-<a id="fn1" href="#fn1">1:</a> Unauthenticated only for the public document types configured in `PUBLIC_DOCTYPES` or `PUBLIC_METADATA_KEY_VALUE`. Supply a valid token for non-public assets. Else, a HTML file manifest with a link to Fotoware (HTTP status 401 Unauthorized).  
-<a id="fn2" href="#fn2">2:</a> Unauthenticated only for the public document types configured in `PUBLIC_DOCTYPES` or `PUBLIC_METADATA_KEY_VALUE`. Supply a valid token for non-public assets. Else, an empty HTTP 401 Unauthorized is returned.  
+<a id="fn1" href="#fn1">1:</a> Public are those assets for which
+the document type is `PUBLIC_DOCTYPES`,
+_OR_ the `PUBLIC_METADATA_KEY_VALUE` matches,
+_OR_ its archive is in `PUBLIC_ARCHIVES`.
+All other assets are not public.
+Else, a HTML file manifest with a link to Fotoware (HTTP status 401 Unauthorized).  
+<a id="fn2" href="#fn2">2:</a> Unauthenticated only for for public assets[¹](#fn1).
+Supply a valid token for non-public assets.
+Else, an empty HTTP 401 Unauthorized is returned.  
 <a id="fn3" href="#fn3">3:</a> The value space was chosen to be shorter (27 chars) than a regular UUID (36 chars).
 The ID value space was based on the choice of a globally random UUID.
 The hex encoding of a UUID is 36 chars long, but with somewhat low entropy: only [0-9a-f] are used.

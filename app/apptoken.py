@@ -35,13 +35,14 @@ original rendition of a file with ID '123456789' (linebreaks for readiblity):
 
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import jwt
 from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .config import JWT_SECRET
+from .config import CANONICAL_HOST_BASE, JWT_SECRET
+from .log import AppLog
 from .resource_identifier import getidentifier
 
 
@@ -63,15 +64,21 @@ def sub_aud_dur_claims(token: str, /) -> tuple[str, TokenAud, timedelta, dict]:
         if ":" in claims.get("sub", ":") and claims.get("aud") is None:
             # The old parsing code uses colon-sep `{aud}:{sub}` in `sub` claim.
             # These tokens were deprecated with v4.2.0
-            audstr, sub = claims.get("sub", f"{TokenAud.NONE}:").split(":", maxsplit=1)
+            audstr, sub = cast(
+                tuple[str, str],
+                claims.get("sub", "zzz:").split(":", maxsplit=1),
+            )
             aud = TokenAud(audstr)
         else:
-            sub = claims.get("sub", "")
+            sub: str = claims.get("sub", "")
             aud = TokenAud(claims.get("aud", TokenAud.NONE))
         iat = datetime.fromtimestamp(claims["iat"])
         exp = datetime.fromtimestamp(claims["exp"])
+        if sub.startswith(CANONICAL_HOST_BASE):
+            sub = getidentifier(fromresource=sub)
         return sub, aud, exp - iat, claims
-    except Exception:
+    except Exception as err:
+        AppLog.warning(f"During token decoding: {err}")
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
 
@@ -100,16 +107,13 @@ def tokencontents(*, sub: str, aud: TokenAud, dur: timedelta, **claims) -> str:
 
 def decode(token: str) -> dict[str, Any]:
     """Get a token's payload. PyJWT can validate claims: iat, exp, nbf, (iss, aud, iat)"""
-    try:
-        return jwt.decode(
-            token,
-            JWT_SECRET,
-            algorithms=["HS256"],
-            leeway=timedelta(seconds=30),
-            verify=True,
-        )
-    except jwt.PyJWTError:
-        return dict()
+    return jwt.decode(
+        token,
+        JWT_SECRET,
+        algorithms=["HS256"],
+        leeway=timedelta(seconds=30),
+        options={"verify_aud": False},
+    )
 
 
 class QueryHeaderAuth:

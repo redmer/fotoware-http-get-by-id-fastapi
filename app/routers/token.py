@@ -1,5 +1,5 @@
 import itertools
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from fastapi import APIRouter
 
@@ -28,7 +28,7 @@ async def new_token(subject: str = ""):
             {
                 "token": tokencontents(aud=role, sub=subject, dur=dur),
                 "duration": dur,
-                "valid_through": (datetime.utcnow() + dur).isoformat(),
+                "valid_through": (datetime.now(UTC) + dur).isoformat(),
                 "role": role,
             }
         )

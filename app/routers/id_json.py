@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Path, Query, Request, Response
 from fastapi.responses import RedirectResponse
@@ -23,16 +23,18 @@ async def identify_file(
     """
 
     res = getresourceurl(fromidentifier=identifier)
+    router = cast(APIRouter, request.scope["router"])
 
     if as_ is not None:
         # The deprecated ?as query parameter
         if as_ == "original":
-            render_asset = str(request.url_for("render_asset"))
-            return RedirectResponse(render_asset + f"?original=1&resource={res}")
+            path = str(router.url_path_for("render_asset"))
+            return RedirectResponse(path + f"?original=1&resource={res}")
 
-        about = str(request.url_for("present_resource"))
-        return RedirectResponse(about + f"?resource={res}&format={as_}")
+        router = cast(APIRouter, request.scope["router"])
+        path = str(router.url_path_for("present_resource"))
+        return RedirectResponse(path + f"?resource={res}&format={as_}")
 
     # This endpoint only redirects to the about renderer
-    about = str(request.url_for("present_resource"))
-    return RedirectResponse(about + f"?resource={res}")
+    path = str(router.url_path_for("present_resource"))
+    return RedirectResponse(path + f"?resource={res}")

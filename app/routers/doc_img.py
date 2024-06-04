@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from fastapi import (
     APIRouter,
@@ -85,9 +85,10 @@ async def file_representation(
 
     res = getresourceurl(fromidentifier=identifier)
     if as_ == "original":
-        return RedirectResponse(
-            str(request.url_for("render_asset")) + f"?original=1&resource={res}"
-        )
+        router = cast(APIRouter, request.scope["router"])
+        path = str(router.url_path_for("present_resource"))
+
+        return RedirectResponse(path + f"?original=1&resource={res}")
 
     # else: renamed query parameter
     if format := request.query_params.get("as"):
@@ -96,9 +97,9 @@ async def file_representation(
         formatsfx = ""
 
     res = getresourceurl(fromidentifier=identifier)
-    return RedirectResponse(
-        str(request.url_for("present_resource")) + f"?resource={res}" + formatsfx,
-    )
+    router = cast(APIRouter, request.scope["router"])
+    path = str(router.url_path_for("present_resource"))
+    return RedirectResponse(path + f"?resource={res}" + formatsfx)
 
 
 @router.get("/-/asset/preview", tags=["render"])
@@ -144,10 +145,9 @@ async def render_preview(
 ):
     """Deprecated. Replaced by /-/asset/preview?resource="""
     res = getresourceurl(fromidentifier=identifier)
-    return RedirectResponse(
-        str(request.url_for("resource_preview"))
-        + f"?{request.query_params}&resource={res}"
-    )
+    router = cast(APIRouter, request.scope["router"])
+    path = str(router.url_path_for("resource_preview"))
+    return RedirectResponse(path + f"?{request.query_params}&resource={res}")
 
 
 @router.get("/-/asset/render", tags=["render"])
@@ -209,7 +209,6 @@ async def render_rendition(
 ):
     """Deprecated. Replaced by /-/asset/render"""
     res = getresourceurl(fromidentifier=identifier)
-    return RedirectResponse(
-        str(request.url_for("render_asset"))
-        + f"?resource={res}&{request.query_params}",
-    )
+    router = cast(APIRouter, request.scope["router"])
+    path = str(router.url_path_for("render_asset"))
+    return RedirectResponse(path + f"?resource={res}&{request.query_params}")

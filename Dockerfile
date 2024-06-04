@@ -1,9 +1,63 @@
-FROM python:3.12-slim
-WORKDIR /code
-COPY ./requirements.txt /code/requirements.txt
+#syntax=docker/dockerfile:1.4
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+ARG INSTALL_DEPENDENCIES=prod
 
-COPY ./app /code/app
+FROM python:3.12-slim AS base
 
-CMD ["uvicorn", "app.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80"]
+# Ensure that Poetry installs in the running dir
+ENV POETRY_CONFIG_DIR=/app
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends curl git build-essential python3-setuptools \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/apt/lists/* \
+    && rm -rf /var/cache/apt/*
+
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH" \
+    POETRY_VERSION=1.7.1
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+    && poetry config virtualenvs.create false \
+    && mkdir -p /cache/poetry \
+    && poetry config cache-dir /cache/poetry
+
+FROM base AS base-prod
+
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock ./
+
+# install only production dependencies
+RUN --mount=type=cache,target=/cache/poetry \
+    poetry install --no-root --only main
+
+FROM base-prod AS base-dev
+
+# install the rest of the dependencies
+RUN --mount=type=cache,target=/cache/poetry \
+    poetry install --no-root
+
+# hadolint ignore=DL3006
+FROM base-${INSTALL_DEPENDENCIES} AS final
+
+# copy all the application code and install our project
+
+COPY scripts ./scripts
+COPY app ./app
+RUN mkdir -p /cento/data
+
+RUN poetry install --only-root
+
+# create a non-root user and switch to it, for security.
+RUN addgroup --system --gid 1001 "app-user"
+RUN adduser --system --uid 1001 "app-user"
+# Ensure that the non-root user can read the Poetry file
+RUN chown app-user:app-user config.toml
+RUN chown app-user:app-user /cento/data
+USER "app-user"
+
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["./scripts/entry.sh"]
+EXPOSE 8000

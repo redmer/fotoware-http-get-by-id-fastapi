@@ -21,6 +21,7 @@ aiohttp-client-cache = {extras = ["redis"], version = "^0.8.1"}
 redis = "^4.5.5"
 cashews = {extras = ["redis"], version = "^6.1.0"}
 frozenlist = "^1.4"
+gunicorn = "^22.0.0"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"

@@ -124,8 +124,9 @@ async def resource_preview(
     identifier = getidentifier(fromresource=resource)
     asset = await fotoware.search.find(ARCHIVES, SE.eq(UUID_FIELD, identifier))
     is_public = fotoware.assets.is_public(asset)
-    if not (not is_public and not authed):  # NAND
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    if not is_public:
+        if not authed:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     return await reprs.filepreview(
         asset,
@@ -178,8 +179,9 @@ async def render_asset(
     asset = await fotoware.search.find(ARCHIVES, SE.eq(UUID_FIELD, identifier))
     is_public = fotoware.assets.is_public(asset)
 
-    if not (not is_public and not authed):  # NAND
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    if not is_public:
+        if not authed:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     if original is True:
         # when this request is done, the file original is in the cache. Great

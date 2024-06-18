@@ -136,11 +136,18 @@ class QueryHeaderAuth:
                 raise HTTPException(status.HTTP_401_UNAUTHORIZED)  # goto except handler
 
             sub, aud, dur, _ = sub_aud_dur_claims(tokencontents)
-            res = request.query_params.get("resource", "")
-            identifier = getidentifier(fromresource=res)
 
-            if not all([identifier == sub, self.aud == aud, self.maxdur >= dur]):
+            if not all([self.aud == aud, self.maxdur >= dur]):
                 raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+            res = request.query_params.get("resource", "")
+            try:
+                identifier = getidentifier(fromresource=res)
+            except HTTPException:
+                identifier = res
+            finally:
+                if identifier != sub:
+                    raise HTTPException(status.HTTP_403_FORBIDDEN)
 
             return True
         except HTTPException as err:

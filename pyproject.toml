@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fotoware-http-get-by-id-fastapi"
-version = "v4.3.0"
+version = "v5.1.3"
 description = "Retrieve a Fotoware asset with a unique identifier using a regular GET request"
 authors = ["Redmer Kronemeijer <12477216+redmer@users.noreply.github.com>"]
 license = "MIT"

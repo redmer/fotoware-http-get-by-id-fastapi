@@ -44,17 +44,19 @@ are found, 404 is returned for that file.
 Action required: Fotoware must index empty values for this field number.
 """
 
-FOTOWARE_FIELDNAME_PHASH = os.getenv("FOTOWARE_FIELDNAME_PHASH")
-"""ID of the field for a visual (perceptual) hash: similar values mean similar images."""
-
 FOTOWARE_FIELDNAME_SHA256 = os.getenv("FOTOWARE_FIELDNAME_SHA256")
 """ID of the field for a file's sha256 hash: identical values mean identical files."""
 
-FOTOWARE_FIELDNAME_IMGSUBJ = os.getenv("FOTOWARE_FIELDNAME_IMGSUBJ")
-"""
-ID of the field for recognized objects on an image. This field MUST be of Bag-type and
-will be filled with keywords from the recognizer. The values are always in English.
-"""
+FOTOWARE_FIELDNAME_ASPECTRATIO = os.getenv("FOTOWARE_FIELDNAME_ASPECTRATIO")
+"""ID of the field for the calculated image aspect ratio."""
+
+FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL = os.getenv("FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL")
+"""ID of the field for the calculated image aspect ratio, as a label"""
+
+FIELDNAME_ASPECTRATIO_LABELS = os.getenv(
+    "FIELDNAME_ASPECTRATIO_LABELS", "portrait square landscape"
+).split()
+"""Space-separated list of the labels for _landscape square portrait_ aspect ratios."""
 
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_urlsafe())
 """

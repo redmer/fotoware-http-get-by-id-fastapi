@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 
 class PreviewTrait(TypedDict):
@@ -50,6 +50,15 @@ class MetadataField(TypedDict):
     value: str | int | bool | list[str]
 
 
+class ImageAttributes(TypedDict):
+    pixelheight: int
+    pixelwidth: int
+
+
+class AssetAttributes(TypedDict):
+    imageattributes: Optional[ImageAttributes]
+
+
 class Asset(TypedDict):
     """An asset representation in Fotoware"""
 
@@ -66,6 +75,7 @@ class Asset(TypedDict):
     previewToken: str
     renditions: list[AssetRendition]
     archiveId: int
+    attributes: Optional[AssetAttributes]
 
 
 class ImageExport(TypedDict):

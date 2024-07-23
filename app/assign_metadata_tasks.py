@@ -3,38 +3,44 @@ from typing import Awaitable, Callable, Iterable
 
 from fastapi import HTTPException
 
+from app.tasks.aspect_ratio import calc_aspect_ratio, calc_aspect_ratio_label
+
 from .config import (
-    FOTOWARE_FIELDNAME_IMGSUBJ,
-    FOTOWARE_FIELDNAME_PHASH,
+    FOTOWARE_FIELDNAME_ASPECTRATIO,
+    FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL,
     FOTOWARE_FIELDNAME_SHA256,
     FOTOWARE_FIELDNAME_UUID,
 )
 from .fotoware import api
 from .fotoware.apitypes import Asset
 from .log import AppLog
-from .tasks import calc_detectobject, calc_perceptualhash, calc_sha256, calc_uuid
+from .tasks import calc_sha256, calc_uuid
 
 
 class Task(str, Enum):
     """Tasks when enumerating files"""
 
-    object_detection = "object-detection"
-    perceptual_hash = "perceptual-hash"
     sha256 = "sha256"
     uuid = "uuid4"
+    aspect_ratio = "aspect-ratio"
+    aspect_ratio_label = "aspect-ratio-label"
 
 
 def task_info(
     task: Task,
 ) -> (
-    tuple[str, Callable[[Asset], Awaitable[str | list[str] | None]]] | tuple[None, None]
+    tuple[str, Callable[[Asset], Awaitable[str | list[str] | float | None]]]
+    | tuple[None, None]
 ):
     """Fieldname used for task"""
     return {
-        Task.object_detection: (FOTOWARE_FIELDNAME_IMGSUBJ, calc_detectobject),
-        Task.perceptual_hash: (FOTOWARE_FIELDNAME_PHASH, calc_perceptualhash),
         Task.sha256: (FOTOWARE_FIELDNAME_SHA256, calc_sha256),
         Task.uuid: (FOTOWARE_FIELDNAME_UUID, calc_uuid),
+        Task.aspect_ratio: (FOTOWARE_FIELDNAME_ASPECTRATIO, calc_aspect_ratio),
+        Task.aspect_ratio_label: (
+            FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL,
+            calc_aspect_ratio_label,
+        ),
     }.get(task, (None, None))
 
 

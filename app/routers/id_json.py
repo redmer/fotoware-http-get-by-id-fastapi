@@ -20,6 +20,10 @@ async def identify_file(
 ):
     """
     Construct a file URL identifier and redirect to its About page.
+
+    This endpoint is useful to make resource-identifiers resolvable URLs. E.g., the
+    asset identifier <https://example.org/id/jezpldzsn3nh4dbai35lk> will redirect to
+    <https://example.org/-/about?resource=https://example.org/id/jezpldzsn3nh4dbai35lk>.
     """
 
     res = getresourceurl(fromidentifier=identifier)

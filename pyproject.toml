@@ -13,7 +13,6 @@ fastapi = "^0.111.0"
 uvicorn = "^0.30.1"
 PyJWT = "^2.6.0"
 slowapi = "^0.1.8"
-pydantic = "^1.10.13"
 jinja2 = "^3.1.4"
 httpx = "^0.24.1"
 aiohttp = "^3.9.4"
@@ -22,6 +21,8 @@ redis = "^4.5.5"
 cashews = {extras = ["redis"], version = "^6.1.0"}
 frozenlist = "^1.4"
 gunicorn = "^22.0.0"
+cryptography = "^42.0.8"
+joserfc = "^1.0.0"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"
@@ -31,6 +32,7 @@ priority = "supplemental"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.7"
+ipykernel = "^6.29.4"
 
 [build-system]
 requires = ["poetry-core"]

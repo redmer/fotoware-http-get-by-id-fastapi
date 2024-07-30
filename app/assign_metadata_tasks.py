@@ -43,9 +43,8 @@ async def exec_update_tasks(*, assets: list[Asset], tasks: Iterable[Task]):
     field, it is NOT recalculated.
     """
     combined_updates = dict()
-    tasks = set([*tasks, Task.aspect_ratio_label])
     AppLog.debug(
-        f"Will run tasks ({"".join(map(lambda t: t.value, tasks))}) for {len(assets)} assets"
+        f"Will run tasks ({" ".join(map(lambda t: t.value, tasks))}) for {len(assets)} assets"
     )
 
     for asset in assets:

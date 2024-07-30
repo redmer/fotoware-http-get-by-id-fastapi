@@ -80,6 +80,7 @@ async def worker_assign_metadata(
 
     Configure it as a webhook (e.g. on ingestion) or run with a cronjob to stay updated.
     """
+    tasks = list(set([*tasks, Task.aspect_ratio_label]))
 
     # Query all assets that have a zero-value for any of the requested tasks' fields
     query = " OR ".join(

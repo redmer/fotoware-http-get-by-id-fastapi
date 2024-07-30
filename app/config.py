@@ -47,14 +47,11 @@ Action required: Fotoware must index empty values for this field number.
 FOTOWARE_FIELDNAME_SHA256 = os.getenv("FOTOWARE_FIELDNAME_SHA256")
 """ID of the field for a file's sha256 hash: identical values mean identical files."""
 
-FOTOWARE_FIELDNAME_ASPECTRATIO = os.getenv("FOTOWARE_FIELDNAME_ASPECTRATIO")
-"""ID of the field for the calculated image aspect ratio."""
-
-FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL = os.getenv("FOTOWARE_FIELDNAME_ASPECTRATIO_LABEL")
+FOTOWARE_ASPECTRATIO_FIELD = os.getenv("FOTOWARE_ASPECTRATIO_FIELD")
 """ID of the field for the calculated image aspect ratio, as a label"""
 
-FIELDNAME_ASPECTRATIO_LABELS = os.getenv(
-    "FIELDNAME_ASPECTRATIO_LABELS", "portrait square landscape"
+FOTOWARE_ASPECTRATIO_LABELS = os.getenv(
+    "FOTOWARE_ASPECTRATIO_LABELS", "portrait square landscape"
 ).split()
 """Space-separated list of the labels for _landscape square portrait_ aspect ratios."""
 

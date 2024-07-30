@@ -49,4 +49,4 @@ async def get_blocklist() -> str:
                 ROBOTS_TXT_CACHE_KEY, content, expire=timedelta(days=1)
             )
 
-    return content
+    return content.decode("utf-8")

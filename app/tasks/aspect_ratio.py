@@ -1,6 +1,6 @@
 from operator import itemgetter
 
-from ..config import FIELDNAME_ASPECTRATIO_LABELS
+from ..config import FOTOWARE_ASPECTRATIO_LABELS
 from ..fotoware.apitypes import Asset
 
 
@@ -17,18 +17,10 @@ async def calc_aspect_ratio_label(asset: Asset) -> str | None:
     try:
         ratio = aspect_ratio(asset)
         if ratio < 1:  # portrait
-            return FIELDNAME_ASPECTRATIO_LABELS[0]
+            return FOTOWARE_ASPECTRATIO_LABELS[0]
         if ratio == 1:  # square
-            return FIELDNAME_ASPECTRATIO_LABELS[1]
+            return FOTOWARE_ASPECTRATIO_LABELS[1]
         if ratio > 1:  # landscape
-            return FIELDNAME_ASPECTRATIO_LABELS[2]
-    except Exception:
-        return None
-
-
-async def calc_aspect_ratio(asset: Asset) -> float | None:
-    """Calculate the asset's aspect ratio"""
-    try:
-        return aspect_ratio(asset)
+            return FOTOWARE_ASPECTRATIO_LABELS[2]
     except Exception:
         return None

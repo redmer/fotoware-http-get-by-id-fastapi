@@ -1,14 +1,18 @@
+"""
+Token
+"""
+
 import itertools
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter
 
 from ..apptoken import TokenAud, tokencontents
 
-router = APIRouter()
+router = APIRouter(tags=["API keys"])
 
 
-@router.get("/-/token/new", tags=["development mode"])
+@router.get("/-/token/new")
 async def new_token(subject: str = ""):
     """Returns a new and valid token"""
 

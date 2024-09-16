@@ -5,7 +5,7 @@ from slowapi.util import get_ipaddr
 
 from .config import ENV, RATE_LIMIT
 from .fotoware import api
-from .routers import doc_img, id_json, robots_txt, tasks
+from .routers import client_keys, doc_img, id_json, robots_txt, tasks
 
 app_desc = """Regular, unauthenticated GET requests to retrieve a Fotoware asset.
     
@@ -25,6 +25,7 @@ app.include_router(id_json.router)
 app.include_router(doc_img.router)
 app.include_router(tasks.router)
 app.include_router(robots_txt.router)
+app.include_router(client_keys.router)
 
 # IP-based rate limiter.
 limiter = Limiter(
@@ -42,6 +43,7 @@ if ENV == "development":
     from .routers import token
 
     logging.basicConfig(level=logging.DEBUG)
+    # logging.getLogger("aiohttp_client_cache").setLevel(level=logging.WARN)
     app.debug = True
 
     @app.get("/fotoweb/{rest:path}", tags=["development mode"])

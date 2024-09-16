@@ -23,6 +23,9 @@ frozenlist = "^1.4"
 gunicorn = "^22.0.0"
 cryptography = "^42.0.8"
 joserfc = "^1.0.0"
+aiolimiter = "^1.1.0"
+aiostream = "^0.6.2"
+pytest = "^8.3.2"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"

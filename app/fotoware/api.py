@@ -1,11 +1,11 @@
-from contextlib import asynccontextmanager
 import json
-from datetime import datetime, timedelta, UTC
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from typing import Tuple
 
-from aiohttp import ClientSession
+import aiolimiter
+from aiohttp import ClientSession, TCPConnector
 from aiohttp_client_cache.backends.redis import RedisBackend
-from aiohttp_client_cache.session import CachedSession
 from fastapi import FastAPI, HTTPException, status
 
 from ..config import (
@@ -16,18 +16,21 @@ from ..config import (
 )
 from .log import FotowareLog
 
-CACHE = RedisBackend(address=f"redis://{REDIS_HOST}", expire_after=timedelta(days=1))
+CACHE = RedisBackend(address=f"redis://{REDIS_HOST}", expire_after=5)
 SESSION: ClientSession
 
 
 FOTOWARE_ACCESS_TOKEN: str | None = None
 FW_ACCESS_TOKEN_EXP: datetime = datetime.now(UTC)
+FotoWareRateLimit = aiolimiter.AsyncLimiter(1, 0.8)  # RateLimit = rate limiter
 
 
 @asynccontextmanager
 async def api_lifespan(app: FastAPI):
     global SESSION
-    SESSION = CachedSession(cache=CACHE)
+    connector = TCPConnector(force_close=True, limit_per_host=10)
+    # SESSION = CachedSession(cache=CACHE, connector=connector)
+    SESSION = ClientSession(connector=connector)
     yield
     await SESSION.close()
 
@@ -70,13 +73,14 @@ async def access_token() -> str:
 async def GET(path, *, headers={}, **get_kwargs) -> dict:
     """GET request on the Fotoware ENDPOINT_HOST. Returns JSON."""
     FotowareLog.debug(f"GET {path} (with auth)")
-    r = await SESSION.get(
-        FOTOWARE_HOST + path,
-        headers={"Accept": "application/json", **await auth_header(), **headers},
-        allow_redirects=True,
-        **get_kwargs,
-    )
-    return await r.json()
+    async with FotoWareRateLimit:
+        r = await SESSION.get(
+            FOTOWARE_HOST + path,
+            headers={"Accept": "application/json", **await auth_header(), **headers},
+            allow_redirects=True,
+            **get_kwargs,
+        )
+        return await r.json()
 
 
 async def auth_header() -> dict[str, str]:
@@ -87,25 +91,51 @@ async def auth_header() -> dict[str, str]:
 async def PATCH(path, *, headers={}, data={}, **patch_kwargs) -> dict:
     """PATCH request on the Fotoware ENDPOINT_HOST"""
     FotowareLog.debug(f"PATCH {path} (with auth) {json.dumps(data)}")
-    r = await SESSION.patch(
-        FOTOWARE_HOST + path,
-        headers={
-            "Content-Type": "application/vnd.fotoware.assetupdate+json",
-            "Accept": "application/vnd.fotoware.asset+json",
-            **await auth_header(),
-            **headers,
-        },
-        allow_redirects=True,
-        json=data,
-        **patch_kwargs,
-    )
+    async with FotoWareRateLimit:
+        r = await SESSION.patch(
+            FOTOWARE_HOST + path,
+            headers={
+                "Content-Type": "application/vnd.fotoware.assetupdate+json",
+                "Accept": "application/vnd.fotoware.asset+json",
+                **await auth_header(),
+                **headers,
+            },
+            allow_redirects=True,
+            json=data,
+            **patch_kwargs,
+        )
 
-    if not r.ok:
-        reason = await r.text()
-        FotowareLog.error(f"Patch request '{path}' failed ({reason})")
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=reason)
+        if not r.ok:
+            reason = await r.text()
+            FotowareLog.error(f"Patch request '{path}' failed ({reason})")
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=reason)
 
-    return await r.json()
+        return await r.json()
+
+
+async def POST(path, *, headers={}, data={}, **post_kwargs) -> dict:
+    """POST request on the Fotoware ENDPOINT_HOST"""
+    FotowareLog.debug(f"POST {path} (with auth) {json.dumps(data)}")
+    async with FotoWareRateLimit:
+        r = await SESSION.post(
+            FOTOWARE_HOST + path,
+            headers={
+                "Content-Type": "application/vnd.fotoware.assetupdate+json",
+                "Accept": "application/vnd.fotoware.asset+json",
+                **await auth_header(),
+                **headers,
+            },
+            allow_redirects=True,
+            json=data,
+            **post_kwargs,
+        )
+
+        if not r.ok:
+            reason = await r.text()
+            FotowareLog.error(f"Post request '{path}' failed ({reason})")
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=reason)
+
+        return await r.json()
 
 
 async def update_single_field(asset_href, field: str, value: str | list[str]):

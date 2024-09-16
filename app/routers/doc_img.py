@@ -1,5 +1,6 @@
 from typing import Annotated, Literal, cast
 
+import aiostream
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -187,7 +188,9 @@ async def render_asset(
         # when this request is done, the file original is in the cache. Great
         # opportunity to calculate its SHA-256.
         background_tasks.add_task(
-            exec_update_tasks, assets=[asset], tasks=[Task.sha256]
+            exec_update_tasks,
+            assets=aiostream.stream.iterate([asset]),
+            tasks=[Task.sha256],
         )
 
     return await reprs.filerendition(

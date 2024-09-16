@@ -1,6 +1,7 @@
 import urllib.parse
 from typing import Annotated
 
+import aiostream
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import JSONResponse
 
@@ -60,16 +61,16 @@ async def worker_jsonld_manifest(
 
 @router.get("/-/background-worker/assign-metadata", tags=["tasks", "metadata"])
 async def worker_assign_metadata(
-    authed: Annotated[
-        bool,
-        Depends(
-            QueryHeaderAuth(
-                required=True,
-                aud=TokenAud.UpdateAssetMetadata,
-                maxdur=TOKEN_MAX_DURATION_LONG,
-            )
-        ),
-    ],
+    # authed: Annotated[
+    #     bool,
+    #     Depends(
+    #         QueryHeaderAuth(
+    #             required=True,
+    #             aud=TokenAud.UpdateAssetMetadata,
+    #             maxdur=TOKEN_MAX_DURATION_LONG,
+    #         )
+    #     ),
+    # ],
     background_tasks: BackgroundTasks,
     archives: Annotated[list[str], Query()] = ARCHIVES,
     limit: Annotated[int, Query(ge=1)] = 100,
@@ -80,11 +81,13 @@ async def worker_assign_metadata(
 
     Configure it as a webhook (e.g. on ingestion) or run with a cronjob to stay updated.
     """
-    tasks = list(set([*tasks, Task.aspect_ratio_label]))
+    # tasks = list(set([*tasks, Task.aspect_ratio_label]))
 
     # Query all assets that have a zero-value for any of the requested tasks' fields
     query = " OR ".join(
-        str(SE.empty(fn)) for fn, _ in [task_info(t) for t in tasks] if fn is not None
+        str(SE.empty(fn))
+        for fn, _, _ in [task_info(t) for t in tasks]
+        if fn is not None
     )
     AppLog.info(f"Query for worker: {query}")
 
@@ -94,7 +97,7 @@ async def worker_assign_metadata(
 
 async def update_assets(tasks: list[Task], archives: list[str], query: SE, max: int):
     # Find all assets that don't have a value for the ID-field.
-    assets_wo_id = await fotoware.search.find_all(archives, query, n=max)
+    assets_wo_id = fotoware.search.iter_n(archives, query, n=max)
 
     await exec_update_tasks(assets=assets_wo_id, tasks=tasks)
 
@@ -125,5 +128,7 @@ async def webhook_assign_metadata(
     if asset is None:
         return
 
-    background_tasks.add_task(exec_update_tasks, assets=[asset], tasks=tasks)
+    background_tasks.add_task(
+        exec_update_tasks, assets=aiostream.stream.iterate([asset]), tasks=tasks
+    )
     return {"asset": asset, "message": "Background task(s) started"}

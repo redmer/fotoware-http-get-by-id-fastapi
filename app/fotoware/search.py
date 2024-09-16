@@ -61,13 +61,14 @@ async def iter_n(
 ) -> AsyncGenerator[Asset, None]:
     """Find /n/ results for query across supplied archives"""
 
-    assets_iter = iter_archives(archives, query)
-    for _ in range(n):
-        try:
-            asset = await anext(assets_iter)
-            yield asset
-        except StopAsyncIteration:
-            pass
+    n_left = n
+
+    async for asset in iter_archives(archives, query):
+        logging.debug(f"Yield asset nr. {n-n_left} ({asset['href'].rsplit('/')[-1]})")
+        yield asset
+        n_left -= 1
+        if n_left < 1:
+            return
 
 
 async def find_all(archives: Iterable[str], query: SE, n: int = 25) -> list[Asset]:
